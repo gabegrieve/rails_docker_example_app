@@ -1,0 +1,74 @@
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: agent.buildkite.localhost
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: agent.buildkite.localhost
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: agent.buildkite.localhost
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: agent.buildkite.localhost
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: agent.buildkite.localhost
+  [1m[35mSQL (0.0ms)[0m  [1m[35mSET search_path TO public /*application='App'*/[0m
+  [1m[35m (29.1ms)[0m  [1m[35mCREATE DATABASE "app_development" ENCODING = 'unicode' /*application='App'*/[0m
+  [1m[35mSQL (0.0ms)[0m  [1m[35mSET search_path TO public /*application='App'*/[0m
+  [1m[35m (20.1ms)[0m  [1m[35mCREATE DATABASE "app_test" ENCODING = 'unicode' /*application='App'*/[0m
+Started GET "/" for 192.168.117.1 at 2026-05-28 04:55:45 +0000
+Cannot render console from 192.168.117.1! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+  [1m[35m (6.1ms)[0m  [1m[35mCREATE TABLE "schema_migrations" ("version" character varying NOT NULL PRIMARY KEY) /*application='App'*/[0m
+  [1m[35m (3.3ms)[0m  [1m[35mCREATE TABLE "ar_internal_metadata" ("key" character varying NOT NULL PRIMARY KEY, "value" character varying, "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL) /*application='App'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.2ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC /*application='App'*/[0m
+Processing by Rails::WelcomeController#index as */*
+  Rendering /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb
+  Rendered /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb (Duration: 0.2ms | GC: 0.0ms)
+Completed 200 OK in 3ms (Views: 0.6ms | ActiveRecord: 0.0ms (0 queries, 0 cached) | GC: 0.0ms)
+
+
+Started GET "/" for 192.168.117.1 at 2026-05-28 04:59:37 +0000
+Cannot render console from 192.168.117.1! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+Processing by Rails::WelcomeController#index as HTML
+  Rendering /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb
+  Rendered /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb (Duration: 0.3ms | GC: 0.0ms)
+Completed 200 OK in 2ms (Views: 0.9ms | ActiveRecord: 0.0ms (0 queries, 0 cached) | GC: 0.0ms)
+
+
+Started GET "/" for 192.168.117.1 at 2026-05-28 05:23:20 +0000
+Cannot render console from 192.168.117.1! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+  [1m[36mActiveRecord::SchemaMigration Load (0.2ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC /*application='App'*/[0m
+Processing by Rails::WelcomeController#index as HTML
+  Rendering /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb
+  Rendered /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb (Duration: 0.2ms | GC: 0.0ms)
+Completed 200 OK in 5ms (Views: 1.5ms | ActiveRecord: 0.0ms (0 queries, 0 cached) | GC: 0.0ms)
+
+
+Started HEAD "/favicon.ico" for 192.168.117.1 at 2026-05-28 05:24:11 +0000
+Cannot render console from 192.168.117.1! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+  
+ActionController::RoutingError (No route matches [HEAD] "/favicon.ico"):
+  
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: web.rails-docker-example-app.orb.local, web.rails-docker-example-app.orb.local
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: web.rails-docker-example-app.orb.local, web.rails-docker-example-app.orb.local
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: web.rails-docker-example-app.orb.local, web.rails-docker-example-app.orb.local
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: web.rails-docker-example-app.orb.local, web.rails-docker-example-app.orb.local
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: web.rails-docker-example-app.orb.local, web.rails-docker-example-app.orb.local
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: web.rails-docker-example-app.orb.local, web.rails-docker-example-app.orb.local
+[ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: web.rails-docker-example-app.orb.local, web.rails-docker-example-app.orb.local
+Started GET "/" for 10.183.233.241 at 2026-05-28 05:27:43 +0000
+Cannot render console from 10.183.233.241! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+  [1m[36mActiveRecord::SchemaMigration Load (0.2ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC /*application='App'*/[0m
+Processing by Rails::WelcomeController#index as HTML
+  Rendering /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb
+  Rendered /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb (Duration: 0.2ms | GC: 0.0ms)
+Completed 200 OK in 3ms (Views: 1.0ms | ActiveRecord: 0.0ms (0 queries, 0 cached) | GC: 0.0ms)
+
+
+Started GET "/" for 192.168.117.1 at 2026-05-28 05:27:46 +0000
+Cannot render console from 192.168.117.1! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+Processing by Rails::WelcomeController#index as HTML
+  Rendering /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb
+  Rendered /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb (Duration: 0.1ms | GC: 0.0ms)
+Completed 200 OK in 2ms (Views: 0.8ms | ActiveRecord: 0.0ms (0 queries, 0 cached) | GC: 0.0ms)
+
+
+Started GET "/" for 10.183.233.241 at 2026-05-28 05:27:49 +0000
+Cannot render console from 10.183.233.241! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+Processing by Rails::WelcomeController#index as HTML
+  Rendering /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb
+  Rendered /usr/local/bundle/gems/railties-8.1.3/libtemplates/rails/welcome/index.html.erb (Duration: 0.1ms | GC: 0.0ms)
+Completed 200 OK in 3ms (Views: 1.2ms | ActiveRecord: 0.0ms (0 queries, 0 cached) | GC: 0.0ms)
+
+
