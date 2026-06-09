@@ -1,0 +1,21 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+published_hello:
+  title: "Hello, Buildkite"
+  body: "This is a published article used across the test suite to demonstrate model, controller, integration and system tests running on Buildkite."
+  published_at: <%= 2.days.ago %>
+
+published_pipelines:
+  title: "Pipelines are fun"
+  body: "Another published article so the index has more than one row to render."
+  published_at: <%= 1.day.ago %>
+
+draft_secret:
+  title: "Unpublished draft"
+  body: "This article has no published_at and must not appear on the index page."
+  published_at:
+
+scheduled_future:
+  title: "Scheduled for later"
+  body: "Published_at is in the future, so the published scope must exclude it."
+  published_at: <%= 1.week.from_now %>

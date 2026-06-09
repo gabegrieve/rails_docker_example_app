@@ -60,6 +60,9 @@ npm-debug.log*
 # Ignore coverage reports.
 /coverage/
 
+# Ignore generated JUnit test reports (uploaded as Buildkite artifacts).
+/test/reports/
+
 # Ignore OS and editor files.
 .DS_Store
 Thumbs.db

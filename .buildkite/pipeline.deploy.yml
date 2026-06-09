@@ -1,0 +1,15 @@
+# Standalone deploy pipeline fragment. Not uploaded automatically by
+# pipeline.yml — it's here as an example of keeping deploy steps in their own
+# file that you could upload conditionally, e.g.:
+#
+#   buildkite-agent pipeline upload .buildkite/pipeline.deploy.yml
+#
+steps:
+  - block: ":shipit: Promote to production?"
+    prompt: "Promote the last green build?"
+
+  - label: ":kamal: Deploy"
+    concurrency: 1
+    concurrency_group: "production-deploy"
+    command:
+      - "echo 'kamal deploy   # placeholder'"

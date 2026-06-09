@@ -63,4 +63,11 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+
+  # Emit JUnit XML so Buildkite's junit-annotate plugin can surface failures.
+  gem "minitest-reporters", require: false
+
+  # Upload results to Buildkite Test Analytics (only activates when
+  # BUILDKITE_ANALYTICS_TOKEN is set — see test/test_helper.rb).
+  gem "buildkite-test_collector", require: false
 end
