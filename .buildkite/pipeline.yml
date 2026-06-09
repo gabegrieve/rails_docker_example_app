@@ -112,9 +112,6 @@ steps:
     steps:
       - label: ":rails: Ruby tests {{matrix.ruby}} / pg{{matrix.postgres}}"
         key: ruby_tests
-        # Split the suite across 3 parallel jobs; Buildkite's test splitter or
-        # the test-collector can balance them.
-        parallelism: 3
         timeout_in_minutes: 15
         # Two-dimension matrix: Ruby version × Postgres version.
         matrix:
@@ -186,6 +183,9 @@ steps:
       - label: ":chrome: System tests"
         key: system_tests
         timeout_in_minutes: 20
+        # Split the suite across 3 parallel jobs; Buildkite's test splitter or
+        # the test-collector can balance them.
+        parallelism: 3
         # System tests can be flaky on cold browsers; retry once automatically.
         retry:
           automatic:
