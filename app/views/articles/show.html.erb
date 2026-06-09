@@ -1,0 +1,16 @@
+<% content_for :title, @article.title %>
+
+<main class="article" data-controller="reading-time">
+  <p><%= link_to "← Back to articles", articles_path %></p>
+
+  <h1 id="article-title"><%= @article.title %></h1>
+
+  <p class="meta">
+    Published <%= @article.published_at&.to_date&.iso8601 || "—" %>
+    <span data-reading-time-target="badge" class="reading-time"></span>
+  </p>
+
+  <article id="article-body" data-reading-time-target="body">
+    <%= simple_format @article.body %>
+  </article>
+</main>

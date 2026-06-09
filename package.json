@@ -1,0 +1,15 @@
+{
+  "name": "rails_docker_example_app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --reporter=default --reporter=junit --outputFile=test/reports/vitest-junit.xml"
+  },
+  "devDependencies": {
+    "@hotwired/stimulus": "^3.2.2",
+    "jsdom": "^25.0.1",
+    "vitest": "^2.1.8"
+  }
+}
