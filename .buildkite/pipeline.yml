@@ -49,14 +49,13 @@ steps:
       - "build-sha.txt"
     plugins:
       - docker-compose#v5.10.0:
-          # Build the web service and push it into Buildkite's image cache so
-          # downstream steps don't rebuild it.
+          # Build the web service. Downstream steps re-run `docker-compose run`
+          # against the same config; the agent's Docker layer cache keeps that
+          # cheap. (We intentionally don't `push` to a registry here — that
+          # requires an authenticated container registry, which this showcase
+          # doesn't assume. See README for how to enable cross-step image cache.)
           build: web
           config: docker-compose.ci.yml
-          cache-from:
-            - "web:${BUILDKITE_PIPELINE_SLUG}-web:latest"
-          push:
-            - "web:${BUILDKITE_PIPELINE_SLUG}-web:latest"
 
   # An explicit `wait` so nothing past this point starts until the image exists.
   - wait
