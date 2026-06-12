@@ -131,6 +131,9 @@ steps:
           # minitest-reporters + Rails parallel forking don't mix; pin to 1 so
           # the JUnit XML is written in one place.
           PARALLEL_WORKERS: "1"
+          # Forces the deliberately-slow unit test to run, holding this step
+          # open for a full 2 minutes (see test/unit/text_utils_test.rb).
+          DEMO_SLOW: "1"
         # Retry transient infra failures automatically; allow a manual retry too.
         retry:
           automatic:

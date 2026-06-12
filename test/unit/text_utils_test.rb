@@ -29,4 +29,14 @@ class TextUtilsTest < ActiveSupport::TestCase
     assert_equal 1, TextUtils.reading_minutes("a few words")
     assert_equal 2, TextUtils.reading_minutes("word " * 300, wpm: 200)
   end
+
+  # Deliberately holds the Ruby test step open for a full 2 minutes so the
+  # pipeline has a long-running step to observe. Skipped unless DEMO_SLOW=1 so
+  # it doesn't slow down ordinary local runs.
+  test "demo slow step waits two minutes" do
+    skip "set DEMO_SLOW=1 to force the 2-minute wait" unless ENV["DEMO_SLOW"] == "1"
+
+    sleep 120
+    assert true
+  end
 end
