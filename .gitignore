@@ -36,7 +36,6 @@
 !.env.sample
 
 # Ignore application configuration with secrets.
-/config/database.yml
 /config/secrets.yml
 
 # Ignore Byebug command history file.
