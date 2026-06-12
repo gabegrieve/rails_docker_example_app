@@ -8,6 +8,8 @@ FROM docker.io/library/ruby:$RUBY_VERSION-slim
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
       build-essential \
+      chromium \
+      chromium-driver \
       curl \
       git \
       libpq-dev \
@@ -16,6 +18,11 @@ RUN apt-get update -qq && \
       pkg-config \
       postgresql-client && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Point the system tests at the distro-installed Chromium + matching driver so
+# Selenium Manager doesn't try to download a (mismatched) chromedriver.
+ENV CHROME_BIN="/usr/bin/chromium" \
+    CHROMEDRIVER_BIN="/usr/bin/chromedriver"
 
 WORKDIR /rails
 
