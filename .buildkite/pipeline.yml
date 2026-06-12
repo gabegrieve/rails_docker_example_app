@@ -151,11 +151,6 @@ steps:
           - docker-compose#v5.10.0:
               run: web
               config: docker-compose.ci.yml
-          # Upload results to Buildkite Test Analytics. Needs a suite token in
-          # the BUILDKITE_ANALYTICS_TOKEN secret/env (no-op without it).
-          - test-collector#v1.11.0:
-              files: "test/reports/**/*.xml"
-              format: "junit"
         command:
           - "bin/rails db:test:prepare"
           - "bin/rails test"
@@ -175,9 +170,6 @@ steps:
           - docker-compose#v5.10.0:
               run: web
               config: docker-compose.ci.yml
-          - test-collector#v1.11.0:
-              files: "test/reports/vitest-junit.xml"
-              format: "junit"
         command:
           - "npm ci"
           - "npm run test:ci"
