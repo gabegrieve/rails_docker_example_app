@@ -33,6 +33,14 @@ agents:
 
 steps:
   # ───────────────────────────────────────────────────────────────────────────
+  # 0. BUILD SUMMARY (start) — post a build-header style annotation up front so
+  #    the build page opens with a quick overview. Runs on the agent directly
+  #    (no Docker), in parallel with the build, so it shows up immediately.
+  # ───────────────────────────────────────────────────────────────────────────
+  - label: ":memo: Build summary"
+    command: ".buildkite/scripts/summary-start.sh"
+
+  # ───────────────────────────────────────────────────────────────────────────
   # 1. BUILD — build the app image once via docker-compose so later steps reuse
   #    it. Demonstrates: `key`, the docker-compose plugin (build + image cache),
   #    artifact_paths, and step-level agents.
@@ -219,6 +227,19 @@ steps:
           artifacts: "test/reports/**/*.xml"
           report-slug: "rails-and-js"
           context: "junit"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 4b. BUILD SUMMARY (end) — tally the JUnit reports into a pass/fail verdict
+  #     annotation, mirroring the results panel in the UI. Allowed to run even
+  #     when tests fail so the summary still posts.
+  # ───────────────────────────────────────────────────────────────────────────
+  - label: ":memo: Build summary (results)"
+    depends_on:
+      - ruby_tests
+      - js_tests
+      - system_tests
+    allow_dependency_failure: true
+    command: ".buildkite/scripts/summary-end.sh"
 
   # ───────────────────────────────────────────────────────────────────────────
   # 5. ANNOTATIONS, META-DATA & DYNAMIC UPLOAD — agent CLI features.
