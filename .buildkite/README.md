@@ -20,7 +20,7 @@ a reference/playground, not a lean production pipeline.
 |---|---|
 | Pipeline-level `env` | top of `pipeline.yml` |
 | Pipeline-level `notify` (GitHub status; Slack/webhook commented) | top of `pipeline.yml` |
-| Default + per-step `agents` / queue targeting | `agents:` block + Build step |
+| Queue / agent targeting (cluster default; per-step `agents` optional) | pipeline/cluster settings |
 | `command` vs `commands` (array) | Build / Tests steps |
 | `key` and `depends_on` | throughout (e.g. `build`, `tests`) |
 | `allow_dependency_failure` | JUnit annotate step |
@@ -55,8 +55,10 @@ a reference/playground, not a lean production pipeline.
 
 These are intentionally inert until you configure them:
 
-- **Agents / queue** — set `BUILDKITE_AGENT_QUEUE` or edit the `agents:` block. The
-  docker-compose plugin steps need an agent with Docker + docker-compose.
+- **Agents / queue** — jobs route to the cluster's default queue. To target a
+  specific queue, use the pipeline's agent targeting field in Buildkite settings,
+  or add an `agents: { queue: ... }` block to individual steps. The docker-compose
+  plugin steps need an agent with Docker + docker-compose.
 - **Test Analytics** — set a `BUILDKITE_ANALYTICS_TOKEN` secret. Without it the
   test-collector plugin and the in-suite collector are no-ops.
 - **Slack / webhook notifications** — uncomment in `notify:` and configure a

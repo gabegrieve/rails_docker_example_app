@@ -26,10 +26,9 @@ notify:
   # - slack: "#builds"
   # - webhook: "https://example.com/buildkite-events"
 
-# Default agent targeting for every step (overridable per step). Set the queue
-# via a build/agent env var, falling back to "default".
-agents:
-  queue: "${BUILDKITE_AGENT_QUEUE:-default}"
+# No pipeline-level queue targeting: jobs route to the cluster's default queue.
+# To target a specific queue, set it via the pipeline's agent targeting field in
+# Buildkite settings, or add `agents: { queue: ... }` to individual steps.
 
 steps:
   # ───────────────────────────────────────────────────────────────────────────
@@ -43,12 +42,10 @@ steps:
   # ───────────────────────────────────────────────────────────────────────────
   # 1. BUILD — build the app image once via docker-compose so later steps reuse
   #    it. Demonstrates: `key`, the docker-compose plugin (build + image cache),
-  #    artifact_paths, and step-level agents.
+  #    and artifact_paths.
   # ───────────────────────────────────────────────────────────────────────────
   - label: ":docker: Build image"
     key: build
-    agents:
-      queue: "${BUILDKITE_AGENT_QUEUE:-default}"
     command:
       - "echo '--- Recording build metadata'"
       - "git rev-parse HEAD > build-sha.txt"
