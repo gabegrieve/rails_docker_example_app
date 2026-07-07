@@ -1,0 +1,18 @@
+# Buildkite Cache v2 config. Consumed by `buildkite-agent cache save/restore`.
+# Entry names must be [a-zA-Z0-9_] only. checksum takes a single file path.
+caches:
+  - name: bundle
+    cache_key:
+      - { agent: os }
+      - { agent: arch }
+      - { checksum: Gemfile.lock }
+    target_paths:
+      - vendor/bundle
+
+  - name: npm
+    cache_key:
+      - { agent: os }
+      - { agent: arch }
+      - { checksum: package-lock.json }
+    target_paths:
+      - node_modules
