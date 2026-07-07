@@ -18,7 +18,14 @@ steps:
     command:
       - 'if [ "$CACHE_ENABLED" = "1" ]; then buildkite-agent cache restore --name bundle; fi'
       - "bundle config set --local path vendor/bundle"
+      # Frozen: treat the committed Gemfile.lock as read-only. If bundle would
+      # rewrite it, the install fails loudly with the exact delta instead of
+      # silently mutating the file (which shifts the checksum cache key and
+      # causes a permanent cache miss). This is also correct CI hygiene.
+      - "bundle config set --local frozen true"
       - "bundle install"
+      # Confirm the checksum key input didn't drift under us (should be a no-op).
+      - "git diff --stat -- Gemfile.lock"
       - 'if [ "$CACHE_ENABLED" = "1" ]; then buildkite-agent cache save --name bundle; fi'
 
   - label: ":javascript: npm"
