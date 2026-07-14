@@ -10,7 +10,7 @@
     <span data-reading-time-target="badge" class="reading-time"></span>
   </p>
 
-  <article id="article-body" data-reading-time-target="body">
-    <%= simple_format @article.body %>
+  <article id="article-body" class="markdown" data-reading-time-target="body" data-controller="copy-code">
+    <%= @article.body_html %>
   </article>
 </main>

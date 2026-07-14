@@ -8,3 +8,41 @@
  *
  * Consider organizing styles into separate files for maintainability.
  */
+
+/* Rendered Markdown article bodies. */
+.markdown pre {
+  position: relative;
+  padding: 1rem;
+  overflow-x: auto;
+  background: #1e1e2e;
+  color: #f8f8f2;
+  border-radius: 6px;
+}
+
+.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.markdown :not(pre) > code {
+  padding: 0.1em 0.35em;
+  background: rgba(127, 127, 127, 0.18);
+  border-radius: 4px;
+}
+
+/* Copy button injected into code blocks by the copy-code Stimulus controller. */
+.copy-code-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  color: #f8f8f2;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.copy-code-button:hover {
+  background: rgba(255, 255, 255, 0.22);
+}

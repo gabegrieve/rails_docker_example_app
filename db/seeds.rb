@@ -17,8 +17,19 @@
   },
   {
     title: "Pipelines are fun",
-    body: "Buildkite pipelines can do a lot more than run a single test command. " \
-          "This repo's .buildkite/ directory shows off as many features as we could fit.",
+    body: <<~MARKDOWN,
+      Buildkite pipelines can do a lot more than run a single test command.
+      This repo's `.buildkite/` directory shows off as many features as we
+      could fit.
+
+      A pipeline step is just some **YAML**:
+
+      ```yaml
+      steps:
+        - label: ":test_tube: Tests"
+          command: bin/rails test
+      ```
+    MARKDOWN
     published_at: 1.day.ago
   }
 ].each do |attrs|

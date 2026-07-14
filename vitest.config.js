@@ -14,6 +14,9 @@ export default defineConfig({
       // `import ... from "lib/reading_time"` resolves under Node too.
       "lib/reading_time": fileURLToPath(
         new URL("./app/javascript/lib/reading_time.js", import.meta.url)
+      ),
+      "lib/clipboard": fileURLToPath(
+        new URL("./app/javascript/lib/clipboard.js", import.meta.url)
       )
     }
   }

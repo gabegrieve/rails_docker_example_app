@@ -27,4 +27,20 @@ class ArticleTest < ActiveSupport::TestCase
     assert_not articles(:draft_secret).published?
     assert_not articles(:scheduled_future).published?
   end
+
+  test "body_html renders Markdown" do
+    article = Article.new(title: "t", body: "Hello **world**")
+    assert_match %r{<strong>world</strong>}, article.body_html
+  end
+
+  test "body_html syntax-highlights fenced code blocks" do
+    article = Article.new(title: "t", body: "```ruby\nputs :hi\n```")
+    # Rouge wraps highlighted code in a .highlight container.
+    assert_match %r{class="highlight"}, article.body_html
+  end
+
+  test "body_html escapes raw HTML in the body" do
+    article = Article.new(title: "t", body: "<script>alert(1)</script>")
+    assert_no_match %r{<script>}, article.body_html
+  end
 end
