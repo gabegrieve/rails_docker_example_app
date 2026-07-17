@@ -1,18 +1,59 @@
 <% content_for :title, "Articles" %>
 
-<main class="articles">
+<main class="articles" data-article-explorer data-article-explorer-items="<%= @articles.map { |article| { id: article.id, title: article.title, body: article.body, published_at: article.published_at.iso8601 } }.to_json %>">
   <h1>Articles</h1>
 
   <% if @articles.empty? %>
     <p id="empty-state">No articles published yet.</p>
   <% else %>
+    <section class="article-explorer-tools" aria-labelledby="explorer-heading">
+      <div class="explorer-heading">
+        <div>
+          <h2 id="explorer-heading">Explore the archive</h2>
+          <p>Search, preview, and export the published articles.</p>
+        </div>
+        <button type="button" data-explorer-export>Export CSV</button>
+        <span class="explorer-tooltip" data-explorer-tooltip role="tooltip" hidden>Download the current results</span>
+      </div>
+
+      <div class="explorer-controls">
+        <label>
+          Search
+          <input type="search" data-explorer-search placeholder="Title or article text…">
+        </label>
+        <label>
+          Sort by
+          <select data-explorer-sort>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="title">Title</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="explorer-status" data-explorer-status role="status"></p>
+      <div class="explorer-stats" aria-label="Article statistics">
+        <span><strong data-explorer-total>0</strong> matching</span>
+        <span>Latest: <strong data-explorer-latest>—</strong></span>
+      </div>
+      <canvas data-explorer-chart aria-label="Articles published over time"></canvas>
+      <span class="export-status" data-explorer-export-status role="status"></span>
+    </section>
+
     <ul id="articles">
       <% @articles.each do |article| %>
-        <li>
+        <li data-article-row data-article-id="<%= article.id %>">
           <%= link_to article.title, article_path(article) %>
           <small><%= article.published_at.to_date.iso8601 %></small>
+          <button type="button" class="preview-button" data-preview-id="<%= article.id %>">Preview</button>
         </li>
       <% end %>
     </ul>
+
+    <aside class="article-preview" data-explorer-preview hidden>
+      <h2 data-explorer-preview-title></h2>
+      <div class="markdown" data-explorer-preview-body></div>
+      <%= link_to "Read full article", "#", data: { explorer_preview_link: true } %>
+    </aside>
   <% end %>
 </main>

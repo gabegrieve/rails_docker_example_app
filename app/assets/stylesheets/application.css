@@ -46,3 +46,55 @@
 .copy-code-button:hover {
   background: rgba(255, 255, 255, 0.22);
 }
+
+/* Article explorer. */
+.article-explorer-tools {
+  position: relative;
+  max-width: 48rem;
+  margin: 2rem 0;
+  padding: 1.25rem;
+  border: 1px solid #d7e2e0;
+  border-radius: 10px;
+  background: #f7fbfa;
+}
+
+.explorer-heading,
+.explorer-controls,
+.explorer-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.explorer-heading { justify-content: space-between; }
+.explorer-heading h2 { margin: 0; }
+.explorer-heading p { margin: 0.25rem 0 0; color: #52615f; }
+.explorer-controls { margin-top: 1rem; }
+.explorer-controls label { display: grid; gap: 0.35rem; font-size: 0.85rem; }
+.explorer-controls input,
+.explorer-controls select,
+.explorer-heading button {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #aabfbb;
+  border-radius: 5px;
+  background: white;
+}
+.explorer-heading button { cursor: pointer; }
+.explorer-status { margin: 1rem 0 0.5rem; color: #52615f; }
+.explorer-stats { font-size: 0.9rem; }
+.explorer-stats span + span { padding-left: 1rem; border-left: 1px solid #c9d8d5; }
+[data-explorer-chart] { max-height: 12rem; margin-top: 1rem; }
+.export-status { display: block; min-height: 1.25rem; margin-top: 0.5rem; color: #147d72; }
+.explorer-tooltip {
+  position: fixed;
+  z-index: 2;
+  padding: 0.35rem 0.5rem;
+  color: white;
+  background: #263735;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+.preview-button { margin-left: 0.75rem; cursor: pointer; }
+.article-preview { margin-top: 1.5rem; padding: 1rem; border-left: 4px solid #14b8a6; background: #f7fbfa; }
+.article-preview h2 { margin-top: 0; }
