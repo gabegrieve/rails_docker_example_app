@@ -33,3 +33,7 @@ The only deviation from a vanilla rails new is the three lines added to default:
 `docker compose exec web bin/rails db:migrate`
 
 After editing the Gemfile, run docker compose build web (gems are baked into the image; the bundle_cache volume just keeps them across rebuilds).
+
+-- 
+
+Change readme on feature branch
