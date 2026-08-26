@@ -1,0 +1,27 @@
+# S2 expected graph (implicit gate expansion):
+# approval-a -> intermediate -> approval-b -> final
+# During the first blocked phase, pre-approve B before A. Expected distinction:
+# B has unblocked_at/unblocked_by but remains dependency-blocked until A and the
+# intermediate command finish.
+steps:
+  - block: "S2 / Approval A — effective current gate"
+    key: "s2-approval-a"
+    prompt: "Leave A blocked, then try to approve B first."
+
+  - label: "S2 / Intermediate work — 30 second window"
+    key: "s2-intermediate"
+    command: "echo 'S2 intermediate work gives time to inspect B'; sleep 30"
+
+  - block: "S2 / Approval B — try this before A"
+    key: "s2-approval-b"
+    prompt: "Record this approval before Approval A resolves."
+    fields:
+      - select: "Decision"
+        key: "s2-decision"
+        options:
+          - label: "Approved for UX observation"
+            value: "approved"
+
+  - label: "S2 / Final command"
+    key: "s2-final"
+    command: "echo 'S2 final ran after both gates'"

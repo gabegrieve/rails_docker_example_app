@@ -1,0 +1,45 @@
+# S6 expected graph:
+# block-setup -> block -> block-consumer
+# input-setup -> input -> input-consumer
+# input-setup -> unrelated-work (does not wait for input)
+# Both manual steps collect a field, but only block is an implicit gate.
+steps:
+  - label: "S6 / Block branch setup"
+    key: "s6-block-setup"
+    command: "echo 'S6 block branch setup'; sleep 5"
+
+  - block: "S6 / BLOCK — gates its consumer"
+    key: "s6-block"
+    depends_on: "s6-block-setup"
+    fields:
+      - text: "Block observation note"
+        key: "s6-block-note"
+        required: false
+
+  - label: "S6 / Block consumer"
+    key: "s6-block-consumer"
+    command: "echo 'S6 block consumer released'"
+    depends_on: "s6-block"
+
+  - label: "S6 / Input branch setup"
+    key: "s6-input-setup"
+    command: "echo 'S6 input branch setup'; sleep 5"
+
+  - input: "S6 / INPUT — does not gate unrelated work"
+    key: "s6-input"
+    depends_on: "s6-input-setup"
+    fields:
+      - text: "Input observation note"
+        key: "s6-input-note"
+        required: false
+
+  - label: "S6 / Unrelated work runs around INPUT"
+    key: "s6-unrelated"
+    command: "echo 'S6 unrelated work did not wait for input'; sleep 10"
+    depends_on: "s6-input-setup"
+
+  - label: "S6 / Explicit input consumer"
+    key: "s6-input-consumer"
+    command: "echo 'S6 input consumer read the submitted data'"
+    depends_on: "s6-input"
+

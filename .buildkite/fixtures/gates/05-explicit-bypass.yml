@@ -1,0 +1,29 @@
+# S5 expected graph:
+# tests -> approval -> protected
+# tests -> bypass
+# scan  -> approval
+# Explicit depends_on lets bypass run after tests without waiting for scan or
+# approval, despite appearing below the block in YAML.
+steps:
+  - label: "S5 / Tests — fast"
+    key: "s5-tests"
+    command: "echo 'S5 tests'; sleep 5"
+
+  - label: "S5 / Slow scan — 45 seconds"
+    key: "s5-scan"
+    command: "echo 'S5 scan remains active while bypass runs'; sleep 45"
+
+  - block: "S5 / Production approval"
+    key: "s5-approval"
+    prompt: "This protects only work that actually depends on it."
+
+  - label: "S5 / BYPASSES approval — depends only on tests"
+    key: "s5-bypass"
+    command: "echo 'S5 bypass ran without production approval'"
+    depends_on: "s5-tests"
+
+  - label: "S5 / Protected by approval"
+    key: "s5-protected"
+    command: "echo 'S5 protected work ran after approval'"
+    depends_on: "s5-approval"
+

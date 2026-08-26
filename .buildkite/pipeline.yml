@@ -1,36 +1,9 @@
-# Cache v2 dogfood pipeline.
+# Block, input, and wait UX exploration dispatcher.
 #
-# Installs Ruby + JS dependencies directly on the agent host and caches them to
-# a BYO S3 bucket via `buildkite-agent cache` (see .buildkite/cache.yml).
-#
-# A/B toggle: set CACHE_ENABLED=0 in the build's env for a baseline (no cache)
-# run, or 1 (default) for a cached run. Compare the step durations between the
-# two to measure the speedup.
-#
-# The previous "feature showcase" pipeline is preserved in git history.
-
-env:
-  CACHE_ENABLED: "1"
-
+# Set GATE_FIXTURE when creating a build (for example, "02-chained-approvals").
+# The upload script uses 01-fanout by default and accepts only committed fixture
+# names, so this throwaway pipeline is safe to trigger repeatedly.
 steps:
-  - label: ":ruby: Bundler"
-    key: bundle
-    command:
-      - 'if [ "$CACHE_ENABLED" = "1" ]; then buildkite-agent cache restore --name bundle; fi'
-      - "bundle config set --local path vendor/bundle"
-      # Frozen: treat the committed Gemfile.lock as read-only. If bundle would
-      # rewrite it, the install fails loudly with the exact delta instead of
-      # silently mutating the file (which shifts the checksum cache key and
-      # causes a permanent cache miss). This is also correct CI hygiene.
-      - "bundle config set --local frozen true"
-      - "bundle install"
-      # Confirm the checksum key input didn't drift under us (should be a no-op).
-      - "git diff --stat -- Gemfile.lock"
-      - 'if [ "$CACHE_ENABLED" = "1" ]; then buildkite-agent cache save --name bundle; fi'
-
-  - label: ":javascript: npm"
-    key: npm
-    command:
-      - 'if [ "$CACHE_ENABLED" = "1" ]; then buildkite-agent cache restore --name npm; fi'
-      - "npm ci"
-      - 'if [ "$CACHE_ENABLED" = "1" ]; then buildkite-agent cache save --name npm; fi'
+  - label: ":pipeline: Upload gate UX fixture"
+    key: "fixture-dispatcher"
+    command: ".buildkite/fixtures/gates/scripts/upload-fixture.sh"

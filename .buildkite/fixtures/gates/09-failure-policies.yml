@@ -1,0 +1,57 @@
+# S9 contains four independent groups. All failures are intentional.
+# A: hard failure -> ordinary wait -> downstream waiting_failed
+# B: soft failure -> block -> downstream runs after approval
+# C: hard failure -> wait continue_on_failure -> downstream runs
+# D: hard failure -> explicit allow_dependency_failure -> downstream runs
+steps:
+  - group: "S9 / A / Hard failure + ordinary wait"
+    key: "s9-group-a"
+    steps:
+      - label: "S9 / A / Hard fail"
+        key: "s9-a-fail"
+        command: "echo 'S9 A hard failure'; sleep 5; exit 1"
+      - wait: ~
+        key: "s9-a-wait"
+      - label: "S9 / A / Must not run"
+        key: "s9-a-after"
+        command: "echo 'ERROR: S9 A unexpectedly ran'; exit 1"
+
+  - group: "S9 / B / Soft failure + block"
+    key: "s9-group-b"
+    steps:
+      - label: "S9 / B / Soft fail"
+        key: "s9-b-soft-fail"
+        command: "echo 'S9 B soft failure'; sleep 6; exit 42"
+        soft_fail:
+          - exit_status: 42
+      - block: "S9 / B / Actionable after soft failure"
+        key: "s9-b-block"
+      - label: "S9 / B / Runs after approval"
+        key: "s9-b-after"
+        command: "echo 'S9 B continued after soft failure and approval'"
+
+  - group: "S9 / C / continue_on_failure wait"
+    key: "s9-group-c"
+    steps:
+      - label: "S9 / C / Hard fail"
+        key: "s9-c-fail"
+        command: "echo 'S9 C hard failure'; sleep 7; exit 1"
+      - wait: ~
+        key: "s9-c-wait-continue"
+        continue_on_failure: true
+      - label: "S9 / C / Runs despite failure"
+        key: "s9-c-after"
+        command: "echo 'S9 C ran through continue_on_failure'"
+
+  - group: "S9 / D / allow_dependency_failure"
+    key: "s9-group-d"
+    steps:
+      - label: "S9 / D / Hard fail"
+        key: "s9-d-fail"
+        command: "echo 'S9 D hard failure'; sleep 8; exit 1"
+      - label: "S9 / D / Explicitly allowed dependency failure"
+        key: "s9-d-after"
+        command: "echo 'S9 D ran with allow_dependency_failure'"
+        depends_on: "s9-d-fail"
+        allow_dependency_failure: true
+

@@ -1,0 +1,13 @@
+# S10 running variant. Expected while blocked: build presentation running;
+# manual job itself remains blocked.
+steps:
+  - label: "S10 / running / Setup"
+    key: "s10-running-setup"
+    command: "echo 'S10 running setup'; sleep 5"
+  - block: "S10 / blocked_state running"
+    key: "s10-running-block"
+    blocked_state: "running"
+  - label: "S10 / running / After"
+    key: "s10-running-after"
+    command: "echo 'S10 running variant released'"
+

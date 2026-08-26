@@ -1,0 +1,34 @@
+# S7 expected graph is scoped within each group:
+# Group A: setup-a -> approval-a -> finish-a
+# Group B: setup-b -> wait-b -> finish-b
+# Approval A must not pause Group B.
+steps:
+  - group: "S7 / Group A — manual gate"
+    key: "s7-group-a"
+    steps:
+      - label: "S7 / A / Setup"
+        key: "s7-a-setup"
+        command: "echo 'S7 group A setup'; sleep 5"
+
+      - block: "S7 / A / Group-local approval"
+        key: "s7-a-approval"
+        prompt: "Leave this blocked and verify Group B can finish."
+
+      - label: "S7 / A / Finish"
+        key: "s7-a-finish"
+        command: "echo 'S7 group A finished after approval'"
+
+  - group: "S7 / Group B — automatic wait"
+    key: "s7-group-b"
+    steps:
+      - label: "S7 / B / Setup — 15 seconds"
+        key: "s7-b-setup"
+        command: "echo 'S7 group B setup'; sleep 15"
+
+      - wait: ~
+        key: "s7-b-wait"
+
+      - label: "S7 / B / Finish — runs while A is blocked"
+        key: "s7-b-finish"
+        command: "echo 'S7 group B finished independently'"
+

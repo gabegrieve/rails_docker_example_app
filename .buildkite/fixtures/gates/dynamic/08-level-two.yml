@@ -1,0 +1,5 @@
+steps:
+  - label: "S8 / Dynamic L2 / Nested work — 25 seconds"
+    key: "s8-level-two-work"
+    command: "echo 'S8 nested dynamic work'; sleep 25"
+

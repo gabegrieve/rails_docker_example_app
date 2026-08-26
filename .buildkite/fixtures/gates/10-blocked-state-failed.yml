@@ -1,0 +1,13 @@
+# S10 failed variant. Expected while blocked: build presentation failed;
+# manual job itself remains blocked. This is not the blocked_failed job state.
+steps:
+  - label: "S10 / failed / Setup"
+    key: "s10-failed-setup"
+    command: "echo 'S10 failed setup'; sleep 5"
+  - block: "S10 / blocked_state failed"
+    key: "s10-failed-block"
+    blocked_state: "failed"
+  - label: "S10 / failed / After"
+    key: "s10-failed-after"
+    command: "echo 'S10 failed variant released'"
+

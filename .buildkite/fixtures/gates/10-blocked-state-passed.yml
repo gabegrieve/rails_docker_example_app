@@ -1,0 +1,13 @@
+# S10 passed/default variant. Expected while blocked: build presentation passed;
+# manual job itself remains blocked. Compare with the running and failed builds.
+steps:
+  - label: "S10 / passed / Setup"
+    key: "s10-passed-setup"
+    command: "echo 'S10 passed setup'; sleep 5"
+  - block: "S10 / blocked_state passed (default)"
+    key: "s10-passed-block"
+    blocked_state: "passed"
+  - label: "S10 / passed / After"
+    key: "s10-passed-after"
+    command: "echo 'S10 passed variant released'"
+

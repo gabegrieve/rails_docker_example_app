@@ -1,0 +1,16 @@
+# S3 expected graph: failing-command -> approval-b -> final
+# Expected raw manual job state after the command fails: blocked_failed, with no
+# unblocked_at or unblocked_by. The block should no longer be actionable.
+steps:
+  - label: "S3 / Upstream hard failure"
+    key: "s3-failing-command"
+    command: "echo 'S3 fails intentionally; the block did not cause this'; sleep 8; exit 1"
+
+  - block: "S3 / Approval B — never approved"
+    key: "s3-approval-b"
+    prompt: "This should become blocked_failed when its dependency fails."
+
+  - label: "S3 / Final command — must not run"
+    key: "s3-final"
+    command: "echo 'ERROR: S3 final unexpectedly ran'; exit 1"
+

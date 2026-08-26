@@ -1,0 +1,15 @@
+# S4 expected graph: slow-failing-command -> approval -> final
+# Approve during the 60-second upstream window. Expected raw manual state after
+# failure: unblocked_failed with unblocked_at/unblocked_by populated.
+steps:
+  - label: "S4 / Slow upstream failure — approve within 60 seconds"
+    key: "s4-slow-failure"
+    command: "echo 'S4 approval window is open for 60 seconds'; sleep 60; echo 'S4 now fails intentionally'; exit 1"
+
+  - block: "S4 / Pre-approve before upstream fails"
+    key: "s4-approval"
+    prompt: "Approve while the slow upstream job is still running. It will later fail."
+
+  - label: "S4 / Final command — must not run"
+    key: "s4-final"
+    command: "echo 'ERROR: S4 final unexpectedly ran'; exit 1"

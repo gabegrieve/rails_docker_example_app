@@ -1,0 +1,16 @@
+# S8 initial graph: uploader -> wait -> final
+# The uploader inserts level-one work, including a nested uploader. The nested
+# uploader inserts level-two work. The wait should absorb uploaded work from
+# before it, so final must not run until both levels finish.
+steps:
+  - label: "S8 / Upload dynamic level one"
+    key: "s8-uploader"
+    command: ".buildkite/fixtures/gates/scripts/upload-dynamic-level-one.sh"
+
+  - wait: ~
+    key: "s8-expanding-wait"
+
+  - label: "S8 / Final — only after recursively uploaded work"
+    key: "s8-final"
+    command: "echo 'S8 final ran after the expanding wait resolved'"
+

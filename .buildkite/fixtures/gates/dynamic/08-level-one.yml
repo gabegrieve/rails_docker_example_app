@@ -1,0 +1,9 @@
+steps:
+  - label: "S8 / Dynamic L1 / Slow work — 20 seconds"
+    key: "s8-level-one-work"
+    command: "echo 'S8 level-one work'; sleep 20"
+
+  - label: "S8 / Dynamic L1 / Nested uploader"
+    key: "s8-nested-uploader"
+    command: ".buildkite/fixtures/gates/scripts/upload-dynamic-level-two.sh"
+
