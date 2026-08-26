@@ -1,18 +1,21 @@
 # S1 expected graph:
-# setup -> uploader -> approval -> 120 numbered commands
-# The uploader materializes the fan-out before the approval becomes actionable,
-# so the blocked build contains one manual gate plus 120 dependent jobs.
+# setup -> approval -> 120 numbered commands
+#      \-> uploader --/
+# The uploader is textually after the block but explicitly depends only on
+# setup, so it bypasses the implicit gate and materializes the fan-out while
+# approval remains blocked. Putting the uploader before the block creates a
+# cycle: gate expansion makes approval depend on the uploaded jobs, while the
+# uploaded jobs explicitly depend on approval.
 steps:
   - label: "S1 / Setup"
     key: "s1-setup"
     command: "echo 'S1 setup complete'; sleep 3"
 
-  - label: "S1 / Generate 120-job fan-out"
+  - block: "S1 / Approve release of 120 jobs"
+    key: "s1-approval"
+    prompt: "Wait for the fan-out uploader to finish, inspect the Waiting filter, then continue."
+
+  - label: "S1 / Generate 120-job fan-out — bypasses block"
     key: "s1-fanout-uploader"
     command: ".buildkite/fixtures/gates/scripts/generate-fanout.sh | buildkite-agent pipeline upload"
     depends_on: "s1-setup"
-
-  - block: "S1 / Approve release of 120 jobs"
-    key: "s1-approval"
-    prompt: "Continue releases 120 harmless, numbered jobs. Inspect the Waiting filter first."
-    depends_on: "s1-fanout-uploader"
