@@ -1,8 +1,10 @@
 # S6 expected graph:
 # block-setup -> block -> block-consumer
-# input-setup -> input -> input-consumer
-# input-setup -> unrelated-work (does not wait for input)
-# Both manual steps collect a field, but only block is an implicit gate.
+# input-setup -> input (no dependents)
+# input-setup -> unrelated-work
+# input-setup -> following-work
+# The input remains third-last in YAML but blocks no work. Both manual steps
+# collect a field, while only the block gates a downstream command.
 steps:
   - label: "S6 / Block branch setup"
     key: "s6-block-setup"
@@ -38,8 +40,7 @@ steps:
     command: "echo 'S6 unrelated work did not wait for input'; sleep 10"
     depends_on: "s6-input-setup"
 
-  - label: "S6 / Explicit input consumer"
-    key: "s6-input-consumer"
-    command: "echo 'S6 input consumer read the submitted data'"
-    depends_on: "s6-input"
-
+  - label: "S6 / Following work also ignores INPUT"
+    key: "s6-following-work"
+    command: "echo 'S6 following work did not wait for input'"
+    depends_on: "s6-input-setup"
