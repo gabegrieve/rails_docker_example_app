@@ -1,0 +1,181 @@
+# S11: deliberately interwoven groups, dependencies, waits, blocks, and input.
+# All commands are harmless. Delays create time to inspect intermediate states.
+#
+# Simplified expected graph (cross-group edges included):
+#
+#   GROUP A — FOUNDATIONS
+#   a-network-plan ----\
+#                       > [implicit] a-foundation-approval
+#   a-data-plan -------/                 |
+#                            +-----------+-----------+
+#                            v                       v
+#                      a-network-apply          a-data-apply
+#                            \                       /
+#                             > [implicit wait] <---
+#                                      |
+#                                  a-smoke
+#
+#   GROUP B — EUROPE
+#   a-network-plan -> b-package -------------------------> b-audit
+#                         |                                  ^
+#   a-smoke ---------> b-policy                              |
+#                         \                                  |
+#                          > [implicit] b-approval -> b-deploy
+#   b-audit is textually after b-approval but explicitly depends only on
+#   b-package, so it bypasses both b-policy and b-approval.
+#
+#   GROUP C — UNITED STATES
+#   a-data-plan -> c-plan -> c-preflight ----\
+#                  \-> c-change-ticket -------> c-approval -> c-deploy
+#   c-change-ticket is an input and does not implicitly block c-preflight, but
+#   c-approval explicitly requires both the preflight and submitted ticket.
+#
+#   GROUP D — GLOBAL RELEASE
+#   b-deploy ----\
+#                > d-release-approval -> d-canary -> d-rollout-approval -> d-full
+#   c-deploy ----/                                           |
+#                                                            v
+#   b-policy ----\                                      d-final-wait -> d-summary
+#                 > d-security-report -----------------------^
+#   c-preflight -/
+#   d-security-report appears after both global blocks in YAML but explicitly
+#   bypasses them. d-observer depends only on a-network-plan and runs very early.
+#
+# Things to inspect:
+# - Whether each group-local gate looks global or correctly scoped.
+# - Whether explicit bypasses are legible before they run.
+# - Whether future gates look actionable before their dependencies resolve.
+# - Whether the input is distinguishable from implicit blocks.
+# - Whether the effective current gate can be found among five manual steps.
+# - Whether the final wait makes its mixed implicit/explicit upstream set clear.
+
+steps:
+  - group: "S11 / A / Shared foundations"
+    key: "s11-group-foundations"
+    steps:
+      - label: "S11 / A1 / Network plan — 10s"
+        key: "s11-a-network-plan"
+        command: "echo 'S11 A1 network plan'; sleep 10"
+
+      - label: "S11 / A2 / Data plan — 16s"
+        key: "s11-a-data-plan"
+        command: "echo 'S11 A2 data plan'; sleep 16"
+
+      - block: "S11 / A3 / Approve shared foundations"
+        key: "s11-a-foundation-approval"
+        prompt: "Implicitly waits for both A1 and A2, then releases both foundation applies."
+
+      - label: "S11 / A4 / Apply network — 12s"
+        key: "s11-a-network-apply"
+        command: "echo 'S11 A4 applying network'; sleep 12"
+
+      - label: "S11 / A5 / Apply data — 20s"
+        key: "s11-a-data-apply"
+        command: "echo 'S11 A5 applying data'; sleep 20"
+
+      - wait: ~
+        key: "s11-a-foundation-wait"
+
+      - label: "S11 / A6 / Foundation smoke test — 8s"
+        key: "s11-a-smoke"
+        command: "echo 'S11 A6 foundations settled'; sleep 8"
+
+  - group: "S11 / B / Europe rollout"
+    key: "s11-group-europe"
+    steps:
+      - label: "S11 / B1 / Package EU — depends on A1 only"
+        key: "s11-b-package"
+        command: "echo 'S11 B1 packages before foundation approval'; sleep 14"
+        depends_on: "s11-a-network-plan"
+
+      - label: "S11 / B2 / EU policy — waits for all foundations"
+        key: "s11-b-policy"
+        command: "echo 'S11 B2 policy after foundation smoke'; sleep 10"
+        depends_on: "s11-a-smoke"
+
+      - block: "S11 / B3 / Approve Europe"
+        key: "s11-b-approval"
+        prompt: "Implicitly waits for B1 and B2. B5 below deliberately bypasses this approval."
+
+      - label: "S11 / B4 / Deploy Europe — 18s"
+        key: "s11-b-deploy"
+        command: "echo 'S11 B4 Europe deployed'; sleep 18"
+
+      - label: "S11 / B5 / EU audit — EXPLICITLY BYPASSES B3"
+        key: "s11-b-audit-bypass"
+        command: "echo 'S11 B5 audit ran without EU approval'; sleep 9"
+        depends_on: "s11-b-package"
+
+  - group: "S11 / C / United States rollout"
+    key: "s11-group-us"
+    steps:
+      - label: "S11 / C1 / Plan US — depends on A2 only"
+        key: "s11-c-plan"
+        command: "echo 'S11 C1 US plan'; sleep 12"
+        depends_on: "s11-a-data-plan"
+
+      - input: "S11 / C2 / Enter US change ticket — non-blocking here"
+        key: "s11-c-change-ticket"
+        prompt: "C3 can run without this input, but C4 explicitly requires it."
+        fields:
+          - text: "Change ticket"
+            key: "s11-change-ticket"
+            hint: "For this fixture, any short value is acceptable."
+            default: "CHG-S11"
+
+      - label: "S11 / C3 / US preflight — ignores input"
+        key: "s11-c-preflight"
+        command: "echo 'S11 C3 preflight ran while ticket may be empty'; sleep 15"
+        depends_on: "s11-c-plan"
+
+      - block: "S11 / C4 / Approve US — requires preflight + input"
+        key: "s11-c-approval"
+        prompt: "Explicitly waits for both C2 input submission and C3 preflight completion."
+        depends_on:
+          - "s11-c-change-ticket"
+          - "s11-c-preflight"
+
+      - label: "S11 / C5 / Deploy US — 22s"
+        key: "s11-c-deploy"
+        command: "echo 'S11 C5 US deployed'; sleep 22"
+
+  - group: "S11 / D / Global release and convergence"
+    key: "s11-group-global"
+    steps:
+      - label: "S11 / D0 / Observer — runs after A1 only"
+        key: "s11-d-early-observer"
+        command: "echo 'S11 D0 observes while most gates are unresolved'; sleep 7"
+        depends_on: "s11-a-network-plan"
+
+      - block: "S11 / D1 / Approve global release"
+        key: "s11-d-release-approval"
+        prompt: "Explicitly waits for both regional deployments. Try pre-approving it early."
+        depends_on:
+          - "s11-b-deploy"
+          - "s11-c-deploy"
+
+      - label: "S11 / D2 / Global canary — 17s"
+        key: "s11-d-canary"
+        command: "echo 'S11 D2 global canary'; sleep 17"
+
+      - block: "S11 / D3 / Approve full rollout"
+        key: "s11-d-rollout-approval"
+        prompt: "Implicitly chained after D1 and D2. Try approving this before D1 resolves."
+
+      - label: "S11 / D4 / Full rollout — 20s"
+        key: "s11-d-full-rollout"
+        command: "echo 'S11 D4 full rollout'; sleep 20"
+
+      - label: "S11 / D5 / Security report — BYPASSES D1 + D3"
+        key: "s11-d-security-bypass"
+        command: "echo 'S11 D5 report bypassed both global approvals'; sleep 11"
+        depends_on:
+          - "s11-b-policy"
+          - "s11-c-preflight"
+
+      - wait: ~
+        key: "s11-d-final-wait"
+
+      - label: "S11 / D6 / Global summary"
+        key: "s11-d-summary"
+        command: "echo 'S11 D6 all non-bypassed and bypassed paths converged'"
