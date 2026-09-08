@@ -1,9 +1,194 @@
-# Block, input, and wait UX exploration dispatcher.
-#
-# Set GATE_FIXTURE when creating a build (for example, "02-chained-approvals").
-# The upload script uses 01-fanout by default and accepts only committed fixture
-# names, so this throwaway pipeline is safe to trigger repeatedly.
 steps:
-  - label: ":pipeline: Upload gate UX fixture"
-    key: "fixture-dispatcher"
-    command: ".buildkite/fixtures/gates/scripts/upload-fixture.sh"
+  - label: ":pipeline: Prepare test"
+    key: "setup"
+    command: |
+      set -euo pipefail
+      echo "Preparing block-step dependency nesting test"
+
+  # Four chained block scopes. The UI should retain the outermost three;
+  # Block 4 and its descendants should flatten beneath Block 3.
+  - block: ":lock: Block 1 — release approval"
+    key: "block-1"
+    depends_on: "setup"
+
+  - label: ":one: Work inside block 1"
+    key: "block-1-work"
+    depends_on: "block-1"
+    command: |
+      set -euo pipefail
+      echo "Running inside block scope 1"
+      sleep 2
+
+  - block: ":lock: Block 2 — environment approval"
+    key: "block-2"
+    depends_on: "block-1-work"
+
+  - label: ":two: Work inside block 2"
+    key: "block-2-work"
+    depends_on: "block-2"
+    command: |
+      set -euo pipefail
+      echo "Running inside block scope 2"
+      sleep 2
+
+  - block: ":lock: Block 3 — production approval"
+    key: "block-3"
+    depends_on: "block-2-work"
+
+  - label: ":three: Work inside block 3"
+    key: "block-3-work"
+    depends_on: "block-3"
+    command: |
+      set -euo pipefail
+      echo "Running inside block scope 3"
+      sleep 2
+
+  - block: ":lock: Block 4 — flattened approval"
+    key: "block-4"
+    depends_on: "block-3-work"
+
+  - label: ":four: Work after block 4"
+    key: "block-4-work"
+    depends_on: "block-4"
+    command: |
+      set -euo pipefail
+      echo "This row should be a sibling of Block 4 beneath Block 3"
+      sleep 2
+
+  - wait: ~
+    key: "nested-wait"
+    depends_on: "block-4-work"
+
+  - label: ":busts_in_silhouette: Large fan-out"
+    key: "fan-out"
+    depends_on: "nested-wait"
+    parallelism: 20
+    command: |
+      set -euo pipefail
+      echo "Fan-out job ${BUILDKITE_PARALLEL_JOB}/${BUILDKITE_PARALLEL_JOB_COUNT}"
+      sleep $((BUILDKITE_PARALLEL_JOB % 4 + 1))
+
+  # This explicitly depends on setup instead of the block chain, so it must
+  # remain at the root rather than appearing inside a block scope.
+  - label: ":fast_forward: Explicit block bypass"
+    key: "block-bypass"
+    depends_on: "setup"
+    command: |
+      set -euo pipefail
+      echo "This step deliberately bypasses all four blocks"
+
+  - group: ":package: Collapsible group with its own block"
+    key: "blocked-group"
+    steps:
+      - label: "Group preparation"
+        key: "group-prepare"
+        command: |
+          set -euo pipefail
+          echo "Preparing grouped work"
+
+      - block: "Group approval"
+        key: "group-block"
+        depends_on: "group-prepare"
+
+      - label: "Grouped protected work"
+        key: "group-protected-work"
+        depends_on: "group-block"
+        command: |
+          set -euo pipefail
+          echo "This should nest beneath Group approval when the group is expanded"
+
+      - label: "Grouped block bypass"
+        key: "group-bypass"
+        depends_on: "group-prepare"
+        command: |
+          set -euo pipefail
+          echo "This should remain outside the group block scope"
+
+  - group: ":test_tube: Retry and ordinary group rows"
+    key: "retry-group"
+    steps:
+      - label: "Pass immediately"
+        key: "group-pass"
+        command: |
+          set -euo pipefail
+          echo "Passing ordinary grouped step"
+
+      - label: ":repeat: Fail once, then retry"
+        key: "retry-once"
+        command: |
+          set -euo pipefail
+          echo "Retry count: ${BUILDKITE_RETRY_COUNT:-0}"
+          if [[ "${BUILDKITE_RETRY_COUNT:-0}" == "0" ]]; then
+            echo "Failing the first attempt intentionally"
+            exit 42
+          fi
+          echo "Retry passed"
+        retry:
+          automatic:
+            - exit_status: 42
+              limit: 1
+
+  # These two blocks are unrelated. The join depends on work from both
+  # branches and must not appear owned by either block.
+  - block: ":leftwards_arrow_with_hook: Unrelated left approval"
+    key: "left-block"
+    depends_on: "setup"
+
+  - label: "Left branch work"
+    key: "left-work"
+    depends_on: "left-block"
+    command: |
+      set -euo pipefail
+      echo "Completing the left branch"
+
+  - block: ":arrow_right_hook: Unrelated right approval"
+    key: "right-block"
+    depends_on: "setup"
+
+  - label: "Right branch work"
+    key: "right-work"
+    depends_on: "right-block"
+    command: |
+      set -euo pipefail
+      echo "Completing the right branch"
+
+  - label: ":twisted_rightwards_arrows: Ambiguous fan-in join"
+    key: "fan-in-join"
+    depends_on:
+      - "left-work"
+      - "right-work"
+    command: |
+      set -euo pipefail
+      echo "This joins unrelated block branches and should remain at the root"
+
+  # The dynamically inserted step acquires an upload dependency. That edge is
+  # a scope boundary and should not inherit a surrounding block hierarchy.
+  - label: ":arrow_up: Upload a dynamic step"
+    key: "dynamic-upload"
+    depends_on: "fan-in-join"
+    command: |
+      set -euo pipefail
+      buildkite-agent pipeline upload <<'PIPELINE'
+      steps:
+        - label: ":sparkles: Dynamically uploaded boundary step"
+          key: "dynamic-boundary-step"
+          command: |
+            set -euo pipefail
+            echo "This step was added by a dynamic pipeline upload"
+            sleep 2
+      PIPELINE
+
+  - label: ":checkered_flag: Final static step"
+    key: "finish"
+    depends_on:
+      - "fan-out"
+      - "block-bypass"
+      - "group-protected-work"
+      - "group-bypass"
+      - "group-pass"
+      - "retry-once"
+      - "fan-in-join"
+      - "dynamic-upload"
+    command: |
+      set -euo pipefail
+      echo "All static acceptance paths completed"
