@@ -96,6 +96,10 @@ steps:
         command: |
           set -euo pipefail
           echo "This should nest beneath Group approval when the group is expanded"
+      
+      - wait: ~
+        key: "grouped-wait"
+        depends_on: "group-protected-work"
 
       - label: "Grouped block bypass"
         key: "group-bypass"
