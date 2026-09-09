@@ -31,6 +31,12 @@ steps:
       echo "Running inside block scope 2"
       sleep 2
 
+  - label: "Fail immediately"
+    key: "fail-immediately"
+    command: |
+      set -euo pipefail
+      exit 42
+
   - block: ":lock: Block 3 — production approval"
     key: "block-3"
     depends_on: "block-2-work"
