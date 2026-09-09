@@ -39,7 +39,7 @@ steps:
 
   - block: ":lock: Block 3 — production approval"
     key: "block-3"
-    depends_on: "block-2-work"
+    depends_on: "fail-immediately"
 
   - label: ":three: Work inside block 3"
     key: "block-3-work"
