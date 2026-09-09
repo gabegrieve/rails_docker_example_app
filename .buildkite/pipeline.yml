@@ -132,6 +132,50 @@ steps:
             - exit_status: 42
               limit: 1
 
+  # The group and the three command steps all depend directly on this block.
+  # The list should show them as siblings beneath the block, while the group's
+  # own children remain one level deeper inside their normal group hierarchy.
+  - block: ":lock: Approval with grouped and regular work"
+    key: "mixed-children-block"
+    depends_on: "setup"
+
+  - label: ":one: Regular sibling before the group"
+    key: "mixed-regular-one"
+    depends_on: "mixed-children-block"
+    command: |
+      set -euo pipefail
+      echo "Running the first regular sibling"
+
+  - group: ":package: Grouped sibling beneath a block"
+    key: "mixed-group"
+    depends_on: "mixed-children-block"
+    steps:
+      - label: "First grouped child"
+        key: "mixed-group-child-one"
+        command: |
+          set -euo pipefail
+          echo "Running the first child inside the grouped sibling"
+
+      - label: "Second grouped child"
+        key: "mixed-group-child-two"
+        command: |
+          set -euo pipefail
+          echo "Running the second child inside the grouped sibling"
+
+  - label: ":two: Regular sibling after the group"
+    key: "mixed-regular-two"
+    depends_on: "mixed-children-block"
+    command: |
+      set -euo pipefail
+      echo "Running the second regular sibling"
+
+  - label: ":three: Another regular sibling"
+    key: "mixed-regular-three"
+    depends_on: "mixed-children-block"
+    command: |
+      set -euo pipefail
+      echo "Running the third regular sibling"
+
   # These two blocks are unrelated. The join depends on work from both
   # branches and must not appear owned by either block.
   - block: ":leftwards_arrow_with_hook: Unrelated left approval"
@@ -191,6 +235,10 @@ steps:
       - "group-bypass"
       - "group-pass"
       - "retry-once"
+      - "mixed-regular-one"
+      - "mixed-group"
+      - "mixed-regular-two"
+      - "mixed-regular-three"
       - "fan-in-join"
       - "dynamic-upload"
     command: |
