@@ -1,252 +1,127 @@
+# Buildkite agent targeting experiment
+#
+# This deliberately replaces the previous pipeline demo. The old version is
+# still available in git history.
+#
+# Start three local agents in the same Buildkite cluster before running this
+# pipeline. Use a unique queue name if these queues are shared with other work:
+#
+#   buildkite-agent start --token "$BUILDKITE_AGENT_TOKEN" \
+#     --name "tag-lab-rich" --queue "tag-mismatch-lab" \
+#     --tags "capability=alpha,flavor=rich"
+#
+#   buildkite-agent start --token "$BUILDKITE_AGENT_TOKEN" \
+#     --name "tag-lab-plain" --queue "tag-mismatch-lab" \
+#     --tags "capability=alpha,flavor=plain"
+#
+#   buildkite-agent start --token "$BUILDKITE_AGENT_TOKEN" \
+#     --name "tag-lab-other-queue" --queue "tag-mismatch-lab-other" \
+#     --tags "capability=alpha,flavor=rich"
+#
+# The first two agents intentionally share a queue. The third has the right
+# flavor but the wrong queue. The queue names must exist in the cluster used by
+# this pipeline.
+
 steps:
-  - label: ":pipeline: Prepare test"
-    key: "setup"
+  - label: ":mag: Baseline — queue only"
+    key: baseline
+    agents:
+      queue: "tag-mismatch-lab"
     command: |
       set -euo pipefail
-      echo "Preparing block-step dependency nesting test"
+      echo "Matched queue=tag-mismatch-lab"
+      echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
+      echo "Host: $(hostname)"
 
-  # Four chained block scopes. The UI should retain the outermost three;
-  # Block 4 and its descendants should flatten beneath Block 3.
-  - block: ":lock: Block 1 — release approval"
-    key: "block-1"
-    depends_on: "setup"
+  - wait
 
-  - label: ":one: Work inside block 1"
-    key: "block-1-work"
-    depends_on: "block-1"
+  # This occupies the only agent with flavor=rich. Release the block below
+  # while this step is visibly running. The rich probe will then be forced to
+  # wait if Buildkite requires every targeting criterion to match.
+  - label: ":lock: Hold the rich agent"
+    key: hold-rich
+    depends_on: baseline
+    agents:
+      queue: "tag-mismatch-lab"
+      flavor: "rich"
     command: |
       set -euo pipefail
-      echo "Running inside block scope 1"
-      sleep 2
+      echo "Holding the only queue=tag-mismatch-lab, flavor=rich agent"
+      echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
+      echo "Host: $(hostname)"
+      sleep 120
+      echo "Rich-agent hold complete"
 
-  - block: ":lock: Block 2 — environment approval"
-    key: "block-2"
-    depends_on: "block-1-work"
+  # Do not release this block until hold-rich is shown as Running. The probes
+  # are most useful while that agent is occupied.
+  - block: ":point_right: Release targeting probes"
+    key: release-probes
+    depends_on: baseline
+    prompt: >-
+      Confirm that “Hold the rich agent” is currently running on
+      tag-lab-rich, then release the probes. Leave the no-match probe queued
+      long enough to observe it before cancelling it.
 
-  - label: ":two: Work inside block 2"
-    key: "block-2-work"
-    depends_on: "block-2"
-    command: |
-      set -euo pipefail
-      echo "Running inside block scope 2"
-      sleep 2
-
-  - label: "Fail immediately"
-    key: "fail-immediately"
-    command: |
-      set -euo pipefail
-      exit 42
-
-  - block: ":lock: Block 3 — production approval"
-    key: "block-3"
-    depends_on: "fail-immediately"
-
-  - label: ":three: Work inside block 3"
-    key: "block-3-work"
-    depends_on: "block-3"
-    command: |
-      set -euo pipefail
-      echo "Running inside block scope 3"
-      sleep 2
-
-  - block: ":lock: Block 4 — flattened approval"
-    key: "block-4"
-    depends_on: "block-3-work"
-
-  - label: ":four: Work after block 4"
-    key: "block-4-work"
-    depends_on: "block-4"
-    command: |
-      set -euo pipefail
-      echo "This row should be a sibling of Block 4 beneath Block 3"
-      sleep 2
-
-  - wait: ~
-    key: "nested-wait"
-    depends_on: "block-4-work"
-
-  - label: ":busts_in_silhouette: Large fan-out"
-    key: "fan-out"
-    depends_on: "nested-wait"
-    parallelism: 20
-    command: |
-      set -euo pipefail
-      echo "Fan-out job ${BUILDKITE_PARALLEL_JOB}/${BUILDKITE_PARALLEL_JOB_COUNT}"
-      sleep $((BUILDKITE_PARALLEL_JOB % 4 + 1))
-
-  # This explicitly depends on setup instead of the block chain, so it must
-  # remain at the root rather than appearing inside a block scope.
-  - label: ":fast_forward: Explicit block bypass"
-    key: "block-bypass"
-    depends_on: "setup"
-    command: |
-      set -euo pipefail
-      echo "This step deliberately bypasses all four blocks"
-
-  - group: ":package: Collapsible group with its own block"
-    key: "blocked-group"
+  - group: ":test_tube: Agent targeting probes"
+    key: targeting-probes
+    depends_on: release-probes
     steps:
-      - label: "Group preparation"
-        key: "group-prepare"
+      - label: ":white_check_mark: Queue + rich flavor"
+        key: probe-rich
+        agents:
+          queue: "tag-mismatch-lab"
+          flavor: "rich"
         command: |
           set -euo pipefail
-          echo "Preparing grouped work"
+          echo "Matched queue=tag-mismatch-lab and flavor=rich"
+          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
+          echo "Host: $(hostname)"
 
-      - block: "Group approval"
-        key: "group-block"
-        depends_on: "group-prepare"
-
-      - label: "Grouped protected work"
-        key: "group-protected-work"
-        depends_on: "group-block"
+      - label: ":white_check_mark: Queue + plain flavor"
+        key: probe-plain
+        agents:
+          queue: "tag-mismatch-lab"
+          flavor: "plain"
         command: |
           set -euo pipefail
-          echo "This should nest beneath Group approval when the group is expanded"
-      
-      - wait: ~
-        key: "grouped-wait"
-        depends_on: "group-protected-work"
+          echo "Matched queue=tag-mismatch-lab and flavor=plain"
+          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
+          echo "Host: $(hostname)"
 
-      - label: "Grouped block bypass"
-        key: "group-bypass"
-        depends_on: "group-prepare"
+      - label: ":white_check_mark: Other queue + rich flavor"
+        key: probe-other-queue
+        agents:
+          queue: "tag-mismatch-lab-other"
+          flavor: "rich"
         command: |
           set -euo pipefail
-          echo "This should remain outside the group block scope"
+          echo "Matched queue=tag-mismatch-lab-other and flavor=rich"
+          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
+          echo "Host: $(hostname)"
 
-  - group: ":test_tube: Retry and ordinary group rows"
-    key: "retry-group"
-    steps:
-      - label: "Pass immediately"
-        key: "group-pass"
+      # Both same-queue agents have capability=alpha, but the rich agent is
+      # busy. This checks that an extra, unrequested tag does not outrank an
+      # available agent that matches every requested criterion.
+      - label: ":mag: Queue + capability while rich is busy"
+        key: probe-capability
+        agents:
+          queue: "tag-mismatch-lab"
+          capability: "alpha"
         command: |
           set -euo pipefail
-          echo "Passing ordinary grouped step"
+          echo "Matched queue=tag-mismatch-lab and capability=alpha"
+          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
+          echo "Host: $(hostname)"
 
-      - label: ":repeat: Fail once, then retry"
-        key: "retry-once"
+      # This job intentionally has no eligible agent. It should remain waiting
+      # even though the queue and other tags match some agents.
+      - label: ":no_entry: Intentional no-match — cancel after observing"
+        key: probe-no-match
+        agents:
+          queue: "tag-mismatch-lab"
+          flavor: "does-not-exist"
         command: |
           set -euo pipefail
-          echo "Retry count: ${BUILDKITE_RETRY_COUNT:-0}"
-          if [[ "${BUILDKITE_RETRY_COUNT:-0}" == "0" ]]; then
-            echo "Failing the first attempt intentionally"
-            exit 42
-          fi
-          echo "Retry passed"
-        retry:
-          automatic:
-            - exit_status: 42
-              limit: 1
-
-  # The group and the three command steps all depend directly on this block.
-  # The list should show them as siblings beneath the block, while the group's
-  # own children remain one level deeper inside their normal group hierarchy.
-  - block: ":lock: Approval with grouped and regular work"
-    key: "mixed-children-block"
-    depends_on: "setup"
-
-  - label: ":one: Regular sibling before the group"
-    key: "mixed-regular-one"
-    depends_on: "mixed-children-block"
-    command: |
-      set -euo pipefail
-      echo "Running the first regular sibling"
-
-  - group: ":package: Grouped sibling beneath a block"
-    key: "mixed-group"
-    depends_on: "mixed-children-block"
-    steps:
-      - label: "First grouped child"
-        key: "mixed-group-child-one"
-        command: |
-          set -euo pipefail
-          echo "Running the first child inside the grouped sibling"
-
-      - label: "Second grouped child"
-        key: "mixed-group-child-two"
-        command: |
-          set -euo pipefail
-          echo "Running the second child inside the grouped sibling"
-
-  - label: ":two: Regular sibling after the group"
-    key: "mixed-regular-two"
-    depends_on: "mixed-children-block"
-    command: |
-      set -euo pipefail
-      echo "Running the second regular sibling"
-
-  - label: ":three: Another regular sibling"
-    key: "mixed-regular-three"
-    depends_on: "mixed-children-block"
-    command: |
-      set -euo pipefail
-      echo "Running the third regular sibling"
-
-  # These two blocks are unrelated. The join depends on work from both
-  # branches and must not appear owned by either block.
-  - block: ":leftwards_arrow_with_hook: Unrelated left approval"
-    key: "left-block"
-    depends_on: "setup"
-
-  - label: "Left branch work"
-    key: "left-work"
-    depends_on: "left-block"
-    command: |
-      set -euo pipefail
-      echo "Completing the left branch"
-
-  - block: ":arrow_right_hook: Unrelated right approval"
-    key: "right-block"
-    depends_on: "setup"
-
-  - label: "Right branch work"
-    key: "right-work"
-    depends_on: "right-block"
-    command: |
-      set -euo pipefail
-      echo "Completing the right branch"
-
-  - label: ":twisted_rightwards_arrows: Ambiguous fan-in join"
-    key: "fan-in-join"
-    depends_on:
-      - "left-work"
-      - "right-work"
-    command: |
-      set -euo pipefail
-      echo "This joins unrelated block branches and should remain at the root"
-
-  # The dynamically inserted step acquires an upload dependency. That edge is
-  # a scope boundary and should not inherit a surrounding block hierarchy.
-  - label: ":arrow_up: Upload a dynamic step"
-    key: "dynamic-upload"
-    depends_on: "fan-in-join"
-    command: |
-      set -euo pipefail
-      buildkite-agent pipeline upload <<'PIPELINE'
-      steps:
-        - label: ":sparkles: Dynamically uploaded boundary step"
-          key: "dynamic-boundary-step"
-          command: |
-            set -euo pipefail
-            echo "This step was added by a dynamic pipeline upload"
-            sleep 2
-      PIPELINE
-
-  - label: ":checkered_flag: Final static step"
-    key: "finish"
-    depends_on:
-      - "fan-out"
-      - "block-bypass"
-      - "group-protected-work"
-      - "group-bypass"
-      - "group-pass"
-      - "retry-once"
-      - "mixed-regular-one"
-      - "mixed-group"
-      - "mixed-regular-two"
-      - "mixed-regular-three"
-      - "fan-in-join"
-      - "dynamic-upload"
-    command: |
-      set -euo pipefail
-      echo "All static acceptance paths completed"
+          echo "UNEXPECTED: a no-match job was dispatched"
+          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
+          exit 1
