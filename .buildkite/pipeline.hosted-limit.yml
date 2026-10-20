@@ -1,0 +1,18 @@
+steps:
+  - group: ":cloud: OPT-IN — hosted concurrency limit"
+    steps:
+      - input: "Start hosted capacity experiment (may incur charges)"
+        key: release-hosted-limit
+        prompt: >-
+          Verify the hosted limit and set parallelism to limit + 1 before upload.
+          Run separately from other scenarios; the organization job limit must
+          have spare capacity or it can mask hosted concurrency.
+
+      - label: "Hosted capacity — hold provisioned machines for 10 minutes"
+        key: hosted-concurrency
+        depends_on: release-hosted-limit
+        agents:
+          queue: wait-lab-hosted
+        parallelism: 3
+        timeout_in_minutes: 12
+        command: sleep 600

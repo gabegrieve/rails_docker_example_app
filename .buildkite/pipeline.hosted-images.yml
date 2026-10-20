@@ -1,0 +1,46 @@
+steps:
+  - group: ":cloud: OPT-IN — hosted startup and image errors"
+    steps:
+      - input: "Start hosted image experiments (may incur charges)"
+        key: release-hosted-images
+        prompt: "Requires a Linux hosted wait-lab-hosted queue and custom-image support. Cancel stuck jobs after observing."
+
+      - label: "Hosted control — observe startup, then run for 30 seconds"
+        key: hosted-startup
+        depends_on: release-hosted-images
+        agents:
+          queue: wait-lab-hosted
+        timeout_in_minutes: 2
+        command: sleep 30
+
+      - input: "Start missing-image experiment (cancel before testing missing tools)"
+        key: release-missing-image
+        depends_on: hosted-startup
+        prompt: "Confirm no other hosted lab attempt is consuming capacity. Cancel this failed startup after observing."
+
+      - label: "Hosted error — nonexistent image tag"
+        key: hosted-unresolvable-image
+        depends_on: release-missing-image
+        agents:
+          queue: wait-lab-hosted
+        image: docker.io/buildkite/hosted-agent-base:wait-lab-intentionally-missing
+        timeout_in_minutes: 2
+        command: |
+          echo "Unexpectedly started; verify the supposedly missing image tag."
+          exit 1
+
+      - input: "Start missing-tools experiment (cancel the missing-image attempt first)"
+        key: release-missing-tools
+        depends_on: hosted-startup
+        prompt: "Confirm no other hosted lab attempt is consuming capacity. Cancel this failed startup after observing."
+
+      - label: "Hosted error — base image lacks bash and git"
+        key: hosted-missing-tools
+        depends_on: release-missing-tools
+        agents:
+          queue: wait-lab-hosted
+        image: docker.io/library/alpine:3.22
+        timeout_in_minutes: 2
+        command: |
+          echo "Unexpectedly started; verify this image still lacks the required tools."
+          exit 1

@@ -1,0 +1,19 @@
+steps:
+  - group: ":warning: OPT-IN — organization platform limit"
+    steps:
+      - input: "Start organization capacity experiment (affects the whole sandbox org)"
+        key: release-platform-limit
+        prompt: >-
+          Use a separate build after cancelling other lab builds. This fixture
+          has 11 jobs for an organization with a verified limit of 10. Adjust
+          parallelism to the actual limit + 1 before upload. Do not run against
+          an organization with unrelated work.
+
+      - label: "Platform capacity — more runnable jobs than the org limit"
+        key: platform-concurrency
+        depends_on: release-platform-limit
+        agents:
+          queue: wait-lab-control
+        parallelism: 11
+        timeout_in_minutes: 12
+        command: sleep 600

@@ -53,8 +53,9 @@ should have the `wait_lab_absent` tag.
 
 Create a pipeline named **Waiting job lab** with repository
 `https://github.com/gabegrieve/rails_docker_example_app.git`. The agents need
-read access to that repository. After publishing the simulation branch, use
-that branch for builds. Configure the pipeline's YAML steps as:
+read access to that repository. After publishing the simulation branch, set
+the pipeline's default branch to `waiting-job-simulation` and use that branch
+for new builds. Configure the pipeline's YAML steps as:
 
 ```yaml
 steps:
@@ -69,10 +70,16 @@ Keep the existing `.yml` filename; do not add a competing `pipeline.yaml`.
 ## Core run: self-hosted observations and existing waits
 
 Leave `WAIT_LAB_MODE` unset, or set it to `core` in the new build's environment.
-The other three experiment groups will be omitted.
+The `pipeline.yml` loader uploads only `pipeline.core.yml`; it does not submit
+any hosted-queue references. The five self-hosted queues are sufficient.
 
-1. Open the build and expand the core group. The three targeting controls should
-   run, including the job with no explicit queue and the `capability=*` job.
+Buildkite validates queue names even for jobs inside false-condition groups.
+Keeping optional scenarios in separate uploads is necessary; `if` conditions
+alone do not make an absent hosted queue safe.
+
+1. Wait for **Load waiting-job scenario** to pass, then expand the core group.
+   The three targeting controls should run, including the job with no explicit
+   queue and the `capability=*` job.
 2. Wait until **both** `SETUP` hold jobs show **Running**, and the pause setup
    job has **passed**. Then release **Release busy and concurrency probes**
    within the holds' ten-minute window. The input is deliberately not dependent
@@ -109,9 +116,13 @@ These are timestamped observations, not permanent causes. Check recovery:
 ## Optional runs: hosted startup and real limits
 
 Choose **one** `WAIT_LAB_MODE` per build in the Buildkite new-build environment,
-not in a shell command after upload. Optional modes omit the core fixtures so
-intentionally scheduled jobs cannot consume capacity and mask the experiment.
-Unknown mode values select no experiment.
+not in a shell command after upload. The loader uploads only that scenario's
+file, so intentionally scheduled core jobs cannot consume capacity and mask
+an optional experiment. Unknown mode values fail the loader with an error.
+
+The scenario files are `pipeline.hosted-images.yml`,
+`pipeline.hosted-limit.yml`, and `pipeline.platform-limit.yml`. Make any
+parallelism changes in the corresponding file before committing and pushing.
 
 Cancel earlier lab builds before running these experiments. For hosted runs,
 create a **Linux hosted** queue named `wait-lab-hosted` in the lab cluster, use
@@ -150,15 +161,17 @@ the plan's large-fleet performance gate or authorization tests.
 Validate locally without starting agents or creating a build:
 
 ```sh
-bk pipeline validate --file .buildkite/pipeline.yml
-buildkite-agent pipeline upload --dry-run \
-  --agent-access-token local-dry-run-placeholder .buildkite/pipeline.yml
+for file in .buildkite/pipeline*.yml; do
+  bk pipeline validate --file "$file"
+  buildkite-agent pipeline upload --dry-run \
+    --agent-access-token local-dry-run-placeholder "$file"
+done
 ```
 
 The installed agent requires a placeholder access token even in dry-run mode;
-this command does not upload or use a real credential. The dry-run parses and
-interpolates YAML; it does not verify live queue existence, permissions,
-provider errors, or resulting scheduler states.
+these commands do not upload or use a real credential. Dry-run parses and
+interpolates YAML; it does not execute the loader or verify live queue
+existence, permissions, provider errors, or resulting scheduler states.
 
 After inspecting a run, cancel the build, resume the dedicated paused agent
 (or allow its 15-minute auto-resume), and stop all lab agent processes in their

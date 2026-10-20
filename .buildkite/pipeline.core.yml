@@ -1,0 +1,144 @@
+# Self-hosted waiting-job lab. Uploaded by pipeline.yml in core mode.
+# Inputs gate only their explicit dependants; no global wait/block hides probes.
+
+steps:
+  - group: ":test_tube: Core — self-hosted capacity, dependencies, concurrency"
+    steps:
+      - label: "Control — cluster default queue (no agents override)"
+        key: control-default
+        timeout_in_minutes: 2
+        command: |
+          echo "No queue specified; inspect the job's effective cluster default."
+          echo "Agent: $${BUILDKITE_AGENT_NAME}"
+          sleep 10
+
+      - label: "Control — explicit queue and all requirements"
+        key: control-exact
+        agents:
+          queue: wait-lab-control
+          capability: alpha
+          flavor: rich
+        timeout_in_minutes: 2
+        command: |
+          echo "Matched queue=wait-lab-control, capability=alpha, flavor=rich."
+          echo "Agent: $${BUILDKITE_AGENT_NAME}"
+          sleep 10
+
+      - label: "Control — wildcard matches an existing tag"
+        key: control-wildcard
+        agents:
+          queue: wait-lab-control
+          capability: "*"
+        timeout_in_minutes: 2
+        command: |
+          echo "capability=* matches an agent with a capability tag."
+          echo "Agent: $${BUILDKITE_AGENT_NAME}"
+          sleep 10
+
+      - label: "No connected agents — existing empty queue"
+        key: no-connected-agents
+        agents:
+          queue: wait-lab-empty
+        timeout_in_minutes: 2
+        command: echo "The empty queue now has connected capacity; this job can run."
+
+      - label: "No match — each requirement matches, but never together"
+        key: no-matching-agents
+        agents:
+          queue: wait-lab-mismatch
+          capability: alpha
+          flavor: rich
+        timeout_in_minutes: 2
+        command: echo "An agent now matches queue AND capability AND flavor."
+
+      - label: "No match — wildcard does not match a missing tag"
+        key: missing-wildcard-tag
+        agents:
+          queue: wait-lab-mismatch
+          wait_lab_absent: "*"
+        timeout_in_minutes: 2
+        command: echo "An agent now has the previously absent wait_lab_absent tag."
+
+      - label: "SETUP — occupy the only matching busy-queue agent for 10 minutes"
+        key: hold-busy-agent
+        agents:
+          queue: wait-lab-busy
+          capability: alpha
+          flavor: rich
+        timeout_in_minutes: 12
+        command: |
+          echo "Agent: $${BUILDKITE_AGENT_NAME}; release probes while this is Running."
+          sleep 600
+
+      - label: "SETUP — hold the concurrency slot for 10 minutes"
+        key: hold-concurrency-slot
+        agents:
+          queue: wait-lab-control
+        concurrency: 1
+        concurrency_group: "${BUILDKITE_PIPELINE_SLUG:-waiting-lab}/${BUILDKITE_BUILD_NUMBER:-local}/slot"
+        timeout_in_minutes: 12
+        command: |
+          echo "Release probes while this is Running; leave the second control agent idle."
+          echo "Agent: $${BUILDKITE_AGENT_NAME}"
+          sleep 600
+
+      - input: ":point_right: Release busy and concurrency probes"
+        key: release-capacity-probes
+        prompt: >-
+          First confirm BOTH setup jobs above are Running. Release within their
+          10-minute holds. The busy probe should be scheduled; the concurrency
+          probe should be limited even with an idle control agent.
+
+      - label: "Busy — matching agent occupied, no concurrency group"
+        key: matching-agents-busy
+        depends_on: release-capacity-probes
+        agents:
+          queue: wait-lab-busy
+          capability: alpha
+          flavor: rich
+        timeout_in_minutes: 2
+        command: echo "The matching agent became available; the busy observation is stale."
+
+      - label: "Concurrency — waiting on another job, not on fleet capacity"
+        key: concurrency-limited
+        depends_on: release-capacity-probes
+        agents:
+          queue: wait-lab-control
+        concurrency: 1
+        concurrency_group: "${BUILDKITE_PIPELINE_SLUG:-waiting-lab}/${BUILDKITE_BUILD_NUMBER:-local}/slot"
+        timeout_in_minutes: 2
+        command: echo "The concurrency slot has been released."
+
+      - label: "SETUP — pause this dedicated lab agent for 15 minutes"
+        key: pause-lab-agent
+        agents:
+          queue: wait-lab-paused
+          capability: alpha
+          flavor: rich
+        timeout_in_minutes: 2
+        command: |
+          set -euo pipefail
+          echo "Pausing only $${BUILDKITE_AGENT_NAME}, not the queue or organization."
+          buildkite-agent pause --timeout-in-minutes 15 --note "Waiting-job lab; auto-resume after 15 minutes"
+
+      - label: "Paused — matching connected agent excluded from dispatch"
+        key: matching-agents-paused
+        depends_on: pause-lab-agent
+        agents:
+          queue: wait-lab-paused
+          capability: alpha
+          flavor: rich
+        timeout_in_minutes: 2
+        command: echo "The matching agent resumed; this job can now run."
+
+      - input: "Release dependency (leave closed while inspecting)"
+        key: release-dependency
+        prompt: "The dependant job should show Waiting on dependency, not an agent-capacity diagnosis."
+
+      - label: "Dependency — agent capacity is not the current blocker"
+        key: dependency-waiting
+        depends_on: release-dependency
+        agents:
+          queue: wait-lab-control
+        timeout_in_minutes: 2
+        command: echo "Dependency released."
