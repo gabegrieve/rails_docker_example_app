@@ -14,14 +14,41 @@ const articles = [
 describe("article explorer helpers", () => {
   it("validates and parses article data", () => {
     expect(parseArticles(JSON.stringify(articles))).toEqual(articles)
+    expect(parseArticles(articles)).toEqual(articles)
     expect(parseArticles("not json")).toEqual([])
     expect(parseArticles([{ id: "wrong" }])).toEqual([])
   })
 
+  it.each([
+    [null],
+    [{}],
+    [{ articles }],
+    [[articles[0], { ...articles[1], body: null }]],
+    [[{ ...articles[0], id: "1" }]],
+    [[{ ...articles[0], published_at: undefined }]]
+  ])("rejects invalid payloads without keeping partially valid articles: %j", (raw) => {
+    expect(parseArticles(raw)).toEqual([])
+  })
+
   it("fuzzy-searches article titles and bodies, then sorts results", () => {
     expect(filterAndSortArticles(articles, "cache").map((article) => article.id)).toEqual([2])
+    expect(filterAndSortArticles(articles, "BUILDKITE").map((article) => article.id)).toEqual([1])
+    expect(filterAndSortArticles(articles, "pipline").map((article) => article.id)).toEqual([1])
     expect(filterAndSortArticles(articles, "", "title").map((article) => article.id)).toEqual([2, 1])
     expect(filterAndSortArticles(articles, "", "oldest").map((article) => article.id)).toEqual([1, 2])
+  })
+
+  it("treats whitespace as no filter and does not mutate the input order", () => {
+    const input = Object.freeze(articles.map((article) => Object.freeze({ ...article })))
+    expect(filterAndSortArticles(input).map(({ id }) => id)).toEqual([2, 1])
+    expect(filterAndSortArticles(input, " \n\t ").map(({ id }) => id)).toEqual([2, 1])
+    expect(input.map(({ id }) => id)).toEqual([1, 2])
+    expect(filterAndSortArticles([], "cache", "title")).toEqual([])
+  })
+
+  it("sorts titles case-insensitively rather than grouping capitals first", () => {
+    const mixed = [{ ...articles[0], title: "Zebra" }, { ...articles[1], title: "apple" }]
+    expect(filterAndSortArticles(mixed, "", "title").map(({ id }) => id)).toEqual([2, 1])
   })
 
   it("formats dates for the explorer", () => {

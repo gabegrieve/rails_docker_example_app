@@ -1,6 +1,5 @@
 # CI-specific compose file used by the Buildkite pipeline (see .buildkite/pipeline.yml).
-# Mirrors docker-compose.yml but targets the test environment and lets the
-# Postgres version be selected by the test matrix via POSTGRES_VERSION.
+# Uses an isolated Postgres database per job and exports test failure artifacts.
 services:
   db:
     image: "postgres:${POSTGRES_VERSION:-16}"
@@ -23,11 +22,15 @@ services:
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
       CI: "true"
+      JUNIT_OUTPUT: "${JUNIT_OUTPUT:-/rails/test/reports/ruby}"
       # Surfaced to the suite so the test-collector can attach build metadata.
       BUILDKITE_ANALYTICS_TOKEN: "${BUILDKITE_ANALYTICS_TOKEN:-}"
       BUILDKITE_BUILD_ID: "${BUILDKITE_BUILD_ID:-}"
       BUILDKITE_BRANCH: "${BUILDKITE_BRANCH:-}"
       BUILDKITE_COMMIT: "${BUILDKITE_COMMIT:-}"
+    volumes:
+      - ./test/reports:/rails/test/reports
+      - ./tmp/screenshots:/rails/tmp/screenshots
     depends_on:
       db:
         condition: service_healthy

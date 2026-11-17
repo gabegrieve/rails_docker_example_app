@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Separate Compose projects keep parallel jobs' databases and cleanup isolated.
+export COMPOSE_PROJECT_NAME="ci-${BUILDKITE_JOB_ID:-local-$$}"
+compose=(docker compose -f docker-compose.ci.yml)
+trap '"${compose[@]}" down --volumes --remove-orphans' EXIT
+
+"${compose[@]}" build web
+"${compose[@]}" up -d --wait db
+
+if [[ "$*" == "bin/rails test" ]]; then
+  "${compose[@]}" run --rm --no-deps web bin/rubocop
+  export JUNIT_OUTPUT=/rails/test/reports/ruby
+else
+  export JUNIT_OUTPUT=/rails/test/reports/browser
+fi
+
+"${compose[@]}" run --rm web bin/rails db:prepare
+"${compose[@]}" run --rm web "$@"

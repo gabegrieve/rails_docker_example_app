@@ -19,6 +19,7 @@ describe("CopyCodeController", () => {
     document.body.innerHTML = `
       <article data-controller="copy-code">
         <pre>echo hello\n</pre>
+        <pre><code><span>puts</span> "world"\n</code></pre>
       </article>
     `
     application = Application.start()
@@ -27,13 +28,18 @@ describe("CopyCodeController", () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     application.stop()
     document.body.innerHTML = ""
   })
 
   it("injects a copy button into each code block", () => {
-    expect(document.querySelectorAll(".copy-code-button")).toHaveLength(1)
+    expect(document.querySelectorAll(".copy-code-button")).toHaveLength(2)
     expect(document.querySelector(".copy-code-button").textContent).toBe("Copy")
+    document.querySelectorAll("pre").forEach((pre) => {
+      expect(pre.classList.contains("has-copy-button")).toBe(true)
+      expect(pre.querySelector("button").type).toBe("button")
+    })
   })
 
   it("copies the code text and updates the label on click", async () => {
@@ -43,5 +49,32 @@ describe("CopyCodeController", () => {
 
     expect(copyMock).toHaveBeenCalledWith("echo hello")
     expect(button.textContent).toBe("Copied!")
+  })
+
+  it("copies highlighted text from the selected block without button labels or markup", async () => {
+    const buttons = document.querySelectorAll(".copy-code-button")
+    buttons[1].click()
+    await vi.waitFor(() => expect(buttons[1].textContent).toBe("Copied!"))
+    expect(copyMock).toHaveBeenLastCalledWith('puts "world"')
+    expect(buttons[0].textContent).toBe("Copy")
+    buttons[1].click()
+    await vi.waitFor(() => expect(copyMock).toHaveBeenCalledTimes(2))
+    expect(copyMock).toHaveBeenLastCalledWith('puts "world"')
+  })
+
+  it("shows success only after the clipboard resolves, then resets the label", async () => {
+    let finishCopy
+    copyMock.mockImplementationOnce(() => new Promise((resolve) => { finishCopy = resolve }))
+    vi.useFakeTimers()
+    const button = document.querySelector(".copy-code-button")
+    button.click()
+    expect(button.textContent).toBe("Copy")
+    finishCopy()
+    await Promise.resolve()
+    expect(button.textContent).toBe("Copied!")
+    await vi.advanceTimersByTimeAsync(1999)
+    expect(button.textContent).toBe("Copied!")
+    await vi.advanceTimersByTimeAsync(1)
+    expect(button.textContent).toBe("Copy")
   })
 })

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild app/javascript/article_explorer.js --bundle --format=esm --outfile=app/assets/builds/article_explorer.js --minify",
+    "build": "esbuild app/javascript/article_explorer.js clipboard-copy=node_modules/clipboard-copy/index.js --bundle --format=esm --outdir=app/assets/builds --minify",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ci": "vitest run --reporter=default --reporter=junit --outputFile=test/reports/vitest-junit.xml"

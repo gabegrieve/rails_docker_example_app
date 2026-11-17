@@ -1,127 +1,27 @@
-# Buildkite agent targeting experiment
-#
-# This deliberately replaces the previous pipeline demo. The old version is
-# still available in git history.
-#
-# Start three local agents in the same Buildkite cluster before running this
-# pipeline. Use a unique queue name if these queues are shared with other work:
-#
-#   buildkite-agent start --token "$BUILDKITE_AGENT_TOKEN" \
-#     --name "tag-lab-rich" --queue "tag-mismatch-lab" \
-#     --tags "capability=alpha,flavor=rich"
-#
-#   buildkite-agent start --token "$BUILDKITE_AGENT_TOKEN" \
-#     --name "tag-lab-plain" --queue "tag-mismatch-lab" \
-#     --tags "capability=alpha,flavor=plain"
-#
-#   buildkite-agent start --token "$BUILDKITE_AGENT_TOKEN" \
-#     --name "tag-lab-other-queue" --queue "tag-mismatch-lab-other" \
-#     --tags "capability=alpha,flavor=rich"
-#
-# The first two agents intentionally share a queue. The third has the right
-# flavor but the wrong queue. The queue names must exist in the cluster used by
-# this pipeline.
+agents:
+  queue: default
 
 steps:
-  - label: ":mag: Baseline — queue only"
-    key: baseline
-    agents:
-      queue: "tag-mismatch-lab"
-    command: |
-      set -euo pipefail
-      echo "Matched queue=tag-mismatch-lab"
-      echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
-      echo "Host: $(hostname)"
+  - label: ":javascript: JavaScript tests and build"
+    key: javascript
+    command: >-
+      docker run --rm -v "$$PWD:/app" -w /app node:24-bookworm-slim
+      sh -ec 'npm ci && npm run test:ci && npm run build'
+    artifact_paths:
+      - "test/reports/vitest-junit.xml"
+    timeout_in_minutes: 10
 
-  - wait
+  - label: ":ruby: Ruby tests and lint"
+    key: ruby
+    command: bash .buildkite/test-ruby bin/rails test
+    artifact_paths:
+      - "test/reports/ruby/**/*.xml"
+    timeout_in_minutes: 20
 
-  # This occupies the only agent with flavor=rich. Release the block below
-  # while this step is visibly running. The rich probe will then be forced to
-  # wait if Buildkite requires every targeting criterion to match.
-  - label: ":lock: Hold the rich agent"
-    key: hold-rich
-    depends_on: baseline
-    agents:
-      queue: "tag-mismatch-lab"
-      flavor: "rich"
-    command: |
-      set -euo pipefail
-      echo "Holding the only queue=tag-mismatch-lab, flavor=rich agent"
-      echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
-      echo "Host: $(hostname)"
-      sleep 120
-      echo "Rich-agent hold complete"
-
-  # Do not release this block until hold-rich is shown as Running. The probes
-  # are most useful while that agent is occupied.
-  - block: ":point_right: Release targeting probes"
-    key: release-probes
-    depends_on: baseline
-    prompt: >-
-      Confirm that “Hold the rich agent” is currently running on
-      tag-lab-rich, then release the probes. Leave the no-match probe queued
-      long enough to observe it before cancelling it.
-
-  - group: ":test_tube: Agent targeting probes"
-    key: targeting-probes
-    depends_on: release-probes
-    steps:
-      - label: ":white_check_mark: Queue + rich flavor"
-        key: probe-rich
-        agents:
-          queue: "tag-mismatch-lab"
-          flavor: "rich"
-        command: |
-          set -euo pipefail
-          echo "Matched queue=tag-mismatch-lab and flavor=rich"
-          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
-          echo "Host: $(hostname)"
-
-      - label: ":white_check_mark: Queue + plain flavor"
-        key: probe-plain
-        agents:
-          queue: "tag-mismatch-lab"
-          flavor: "plain"
-        command: |
-          set -euo pipefail
-          echo "Matched queue=tag-mismatch-lab and flavor=plain"
-          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
-          echo "Host: $(hostname)"
-
-      - label: ":white_check_mark: Other queue + rich flavor"
-        key: probe-other-queue
-        agents:
-          queue: "tag-mismatch-lab-other"
-          flavor: "rich"
-        command: |
-          set -euo pipefail
-          echo "Matched queue=tag-mismatch-lab-other and flavor=rich"
-          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
-          echo "Host: $(hostname)"
-
-      # Both same-queue agents have capability=alpha, but the rich agent is
-      # busy. This checks that an extra, unrequested tag does not outrank an
-      # available agent that matches every requested criterion.
-      - label: ":mag: Queue + capability while rich is busy"
-        key: probe-capability
-        agents:
-          queue: "tag-mismatch-lab"
-          capability: "alpha"
-        command: |
-          set -euo pipefail
-          echo "Matched queue=tag-mismatch-lab and capability=alpha"
-          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
-          echo "Host: $(hostname)"
-
-      # This job intentionally has no eligible agent. It should remain waiting
-      # even though the queue and other tags match some agents.
-      - label: ":no_entry: Intentional no-match — cancel after observing"
-        key: probe-no-match
-        agents:
-          queue: "tag-mismatch-lab"
-          flavor: "does-not-exist"
-        command: |
-          set -euo pipefail
-          echo "UNEXPECTED: a no-match job was dispatched"
-          echo "Agent: ${BUILDKITE_AGENT_NAME:-unknown}"
-          exit 1
+  - label: ":chrome: Browser tests"
+    key: browser
+    command: bash .buildkite/test-ruby bin/rails test:system
+    artifact_paths:
+      - "test/reports/browser/**/*.xml"
+      - "tmp/screenshots/**/*"
+    timeout_in_minutes: 20

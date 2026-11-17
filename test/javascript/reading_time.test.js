@@ -17,6 +17,11 @@ describe("reading_time helpers", () => {
       expect(wordCount("")).toBe(0)
       expect(wordCount(null)).toBe(0)
       expect(wordCount(undefined)).toBe(0)
+      expect(wordCount(" \n\t ")).toBe(0)
+    })
+
+    it("recognizes Unicode whitespace without treating punctuation as word boundaries", () => {
+      expect(wordCount("hello,world\u00a0next\tlast-word")).toBe(3)
     })
   })
 
@@ -33,6 +38,11 @@ describe("reading_time helpers", () => {
     it("formats a human-readable label", () => {
       const text = Array(450).fill("word").join(" ")
       expect(formatReadingTime(text)).toBe("≈ 3 min read")
+    })
+
+    it("uses the requested reading speed and gives empty articles a minimum estimate", () => {
+      expect(formatReadingTime(Array(101).fill("word").join(" "), 100)).toBe("≈ 2 min read")
+      expect(formatReadingTime("")).toBe("≈ 1 min read")
     })
   })
 })

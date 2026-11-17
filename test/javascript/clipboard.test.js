@@ -20,5 +20,11 @@ describe("clipboard helpers", () => {
       expect(codeText(null)).toBe("")
       expect(codeText(undefined)).toBe("")
     })
+
+    it("extracts highlighted code while preserving indentation and intentional blank lines", () => {
+      const pre = document.createElement("pre")
+      pre.innerHTML = '<code><span>if</span> ready\n  run()\n\n</code>'
+      expect(codeText(pre)).toBe("if ready\n  run()\n")
+    })
   })
 })

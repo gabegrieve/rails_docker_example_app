@@ -3,6 +3,14 @@
 # The production Dockerfile lives alongside this one (see ./Dockerfile).
 
 ARG RUBY_VERSION=3.4.9
+
+FROM docker.io/library/node:24-bookworm-slim AS javascript
+WORKDIR /rails
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY app/javascript ./app/javascript
+RUN npm run build
+
 FROM docker.io/library/ruby:$RUBY_VERSION-slim
 
 RUN apt-get update -qq && \
@@ -30,6 +38,7 @@ COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
 COPY . .
+COPY --from=javascript /rails/app/assets/builds /rails/app/assets/builds
 
 EXPOSE 4000
 CMD ["bin/rails", "server", "-b", "0.0.0.0"]

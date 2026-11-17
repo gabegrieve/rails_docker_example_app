@@ -29,4 +29,26 @@ describe("ReadingTimeController", () => {
     const badge = document.querySelector("[data-reading-time-target='badge']")
     expect(badge.textContent).toBe("≈ 3 min read")
   })
+
+  it("counts rendered nested text rather than HTML markup", async () => {
+    document.body.innerHTML = `
+      <main data-controller="reading-time">
+        <span data-reading-time-target="badge"></span>
+        <article data-reading-time-target="body"><strong>${Array(200).fill("word").join(" ")}</strong> <em>last</em></article>
+      </main>`
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(document.querySelector("[data-reading-time-target='badge']").textContent).toBe("≈ 2 min read")
+  })
+
+  it.each(["body", "badge"])("leaves partial markup alone when the %s target is missing", async (missing) => {
+    document.body.innerHTML = `
+      <main data-controller="reading-time">
+        ${missing === "badge" ? "" : '<span data-reading-time-target="badge">Not calculated</span>'}
+        ${missing === "body" ? "" : '<article data-reading-time-target="body">Some text</article>'}
+      </main>`
+    const before = document.querySelector("main").innerHTML
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(document.querySelector("main").innerHTML).toBe(before)
+    expect(application.getControllerForElementAndIdentifier(document.querySelector("main"), "reading-time")).not.toBeNull()
+  })
 })

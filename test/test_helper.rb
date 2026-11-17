@@ -25,7 +25,7 @@ end
 
 # 2. Buildkite Test Analytics. Only activates when a token is present, so the
 #    suite runs fine locally and in forks without one.
-if ENV["BUILDKITE_ANALYTICS_TOKEN"]
+if ENV["BUILDKITE_ANALYTICS_TOKEN"].present?
   require "buildkite/test_collector"
   Buildkite::TestCollector.configure(hook: :minitest)
 end

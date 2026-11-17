@@ -1,33 +1,25 @@
-# Agent targeting experiment
+# Buildkite CI
 
-This pipeline replaces the previous feature/dependency showcase. The previous
-version remains available in git history.
+All steps target the `default` queue and run independently, without blocks, waits, matrices, or intentional failures. Agents need Docker with Compose v2 or newer; Ruby, Node, PostgreSQL, and Chromium run in containers.
 
-## Setup
+- **JavaScript tests and build:** installs locked npm dependencies, runs Vitest with JUnit output, and bundles the article explorer with esbuild using Node 24.
+- **Ruby tests and lint:** runs RuboCop, prepares PostgreSQL, and runs the model, request, integration, and text utility tests using Ruby 3.4.9.
+- **Browser tests:** prepares PostgreSQL and runs Capybara/Selenium tests against headless Chromium, including the real JavaScript bundle.
 
-Create or choose two queues in the same cluster as this pipeline, then start
-three local agents. Keep the agent token in the environment; do not commit it.
+Each Ruby job uses its own Compose project and database. The cleanup trap removes that project's containers and volumes, including after a failure. Reports and browser-failure screenshots are bind-mounted onto the agent and uploaded as artifacts. The application image builds JavaScript from the lockfile rather than relying on the checked-in bundle.
+
+## Run locally
+
+From the repository root:
 
 ```sh
-buildkite-agent start --token "$BUILDKITE_AGENT_TOKEN" \
-  --name "tag-lab-rich" --queue "tag-mismatch-lab" \
-  --tags "capability=alpha,flavor=rich"
-
-buildkite-agent start --token "$BUILDKITE_AGENT_TOKEN" \
-  --name "tag-lab-plain" --queue "tag-mismatch-lab" \
-  --tags "capability=alpha,flavor=plain"
-
-buildkite-agent start --token "$BUILDKITE_AGENT_TOKEN" \
-  --name "tag-lab-other-queue" --queue "tag-mismatch-lab-other" \
-  --tags "capability=alpha,flavor=rich"
+npm ci
+npm run test:ci
+npm run build
+bash .buildkite/test-ruby bin/rails test
+bash .buildkite/test-ruby bin/rails test:system
 ```
 
-Run the pipeline, wait until `Hold the rich agent` is running on
-`tag-lab-rich`, and release the `Release targeting probes` block. Observe the
-job states and the agent names printed in each log. The intentional no-match
-job should remain waiting; cancel it after observing it.
+The Ruby commands build their own image and clean up their database when finished; they do not use the development database. JUnit reports appear in `test/reports/`, and browser-failure screenshots appear in `tmp/screenshots/`.
 
-The experiment checks that queue and additional agent tags are conjunctive,
-that an agent matching only one criterion is not eligible, and that an extra
-unrequested tag does not outrank an available agent matching all requested
-criteria.
+`BUILDKITE_ANALYTICS_TOKEN` optionally enables the Ruby Buildkite Test Analytics collector. Without a nonblank token, tests still run and produce JUnit reports. No demo slow tests, random failures, or automatic retries mask the results.
