@@ -37,8 +37,11 @@ WORKDIR /rails
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
-COPY . .
-COPY --from=javascript /rails/app/assets/builds /rails/app/assets/builds
+# CI matches the agent's UID/GID; ordinary development retains the root default.
+ARG APP_UID=0
+ARG APP_GID=0
+COPY --chown=${APP_UID}:${APP_GID} . .
+COPY --from=javascript --chown=${APP_UID}:${APP_GID} /rails/app/assets/builds /rails/app/assets/builds
 
 EXPOSE 4000
 CMD ["bin/rails", "server", "-b", "0.0.0.0"]

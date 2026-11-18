@@ -8,6 +8,10 @@ All steps target the `default` queue and run independently, without blocks, wait
 
 Each Ruby job uses its own Compose project and database. The cleanup trap removes that project's containers and volumes, including after a failure. Reports and browser-failure screenshots are bind-mounted onto the agent and uploaded as artifacts. The application image builds JavaScript from the lockfile rather than relying on the checked-in bundle.
 
+JavaScript and Ruby CI containers run with the invoking agent's UID/GID, so generated files remain removable during checkout cleanup. `.buildkite/test-ruby` exports `CI_UID`/`CI_GID`, creates bind-mount directories as the agent, and builds application files with matching ownership. Both runtimes use `/tmp` as a writable home for caches. PostgreSQL keeps its image's own user configuration; development-container defaults are unchanged.
+
+If an earlier build left root-owned checkout files, repair that checkout once with `sudo chown -R buildkite-agent:buildkite-agent /path/to/checkout` while no jobs are using it. Substitute the actual agent user and checkout path. The CI changes prevent new ownership problems but do not repair existing files.
+
 ## Run locally
 
 From the repository root:

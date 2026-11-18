@@ -16,7 +16,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+      args:
+        APP_UID: "${CI_UID:?Run via .buildkite/test-ruby}"
+        APP_GID: "${CI_GID:?Run via .buildkite/test-ruby}"
+    user: "${CI_UID:?Run via .buildkite/test-ruby}:${CI_GID:?Run via .buildkite/test-ruby}"
     environment:
+      HOME: /tmp
       RAILS_ENV: test
       DATABASE_HOST: db
       DATABASE_USERNAME: postgres

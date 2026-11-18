@@ -3,6 +3,9 @@ set -euo pipefail
 
 # Separate Compose projects keep parallel jobs' databases and cleanup isolated.
 export COMPOSE_PROJECT_NAME="ci-${BUILDKITE_JOB_ID:-local-$$}"
+export CI_UID="$(id -u)" CI_GID="$(id -g)"
+# Create bind-mount sources as the agent, not as the root-owned Docker daemon.
+mkdir -p test/reports tmp/screenshots
 compose=(docker compose -f docker-compose.ci.yml)
 trap '"${compose[@]}" down --volumes --remove-orphans' EXIT
 
