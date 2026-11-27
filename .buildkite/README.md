@@ -12,6 +12,12 @@ JavaScript and Ruby CI containers run with the invoking agent's UID/GID, so gene
 
 If an earlier build left root-owned checkout files, repair that checkout once with `sudo chown -R buildkite-agent:buildkite-agent /path/to/checkout` while no jobs are using it. Substitute the actual agent user and checkout path. The CI changes prevent new ownership problems but do not repair existing files.
 
+## Caching
+
+The JavaScript step uses [Buildkite Cache](https://buildkite.com/docs/pipelines/configure/cache) for npm downloads, not `node_modules` or build output. It looks up the cache by agent OS, architecture, and lockfile checksum, falling back to downloads from an earlier lockfile on the same OS and architecture. `npm ci` still installs from the lockfile on every run. The step saves the cache after the tests and build pass.
+
+Buildkite Cache requires a clustered agent running v4.0.3 or later. Hosted agents have a cache store by default; self-hosted agents need a configured `BUILDKITE_AGENT_CACHE_STORE_URL` and storage credentials. The Ruby and browser jobs rely on Docker's layer cache for gems, npm dependencies, and system packages rather than transferring the application image through Buildkite Cache.
+
 ## Run locally
 
 From the repository root:
