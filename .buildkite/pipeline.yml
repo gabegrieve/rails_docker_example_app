@@ -4,10 +4,14 @@ agents:
 steps:
   - label: ":javascript: JavaScript tests and build"
     key: javascript
-    command: >-
-      docker run --rm --user "$$(id -u):$$(id -g)" -e HOME=/tmp
-      -v "$$PWD:/app" -w /app node:24-bookworm-slim
-      sh -ec 'npm ci && npm run test:ci && npm run build'
+    command: |
+      set -e
+      buildkite-agent cache restore --name npm
+      docker run --rm --user "$$(id -u):$$(id -g)" -e HOME=/tmp \
+        -e npm_config_cache=/app/tmp/npm-cache \
+        -v "$$PWD:/app" -w /app node:24-bookworm-slim \
+        sh -ec 'npm ci --prefer-offline && npm run test:ci && npm run build'
+      buildkite-agent cache save --name npm
     artifact_paths:
       - "test/reports/vitest-junit.xml"
     timeout_in_minutes: 10
